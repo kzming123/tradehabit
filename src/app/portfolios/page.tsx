@@ -1,0 +1,139 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Plus } from "lucide-react";
+import { Portfolio } from "@/types";
+import { portfolioStorage, tradeStorage } from "@/lib/storage";
+import { PortfolioCard } from "@/components/portfolios/PortfolioCard";
+import { PortfolioFormModal } from "@/components/portfolios/PortfolioFormModal";
+import { DeleteConfirmDialog } from "@/components/portfolios/DeleteConfirmDialog";
+import { toast } from "sonner";
+
+export default function PortfoliosPage() {
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [tradeCounts, setTradeCounts] = useState<Record<string, number>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Portfolio | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Portfolio | null>(null);
+
+  useEffect(() => {
+    portfolioStorage.seedIfEmpty();
+    reload();
+  }, []);
+
+  function reload() {
+    const all = portfolioStorage.getAll();
+    setPortfolios(all);
+    const counts: Record<string, number> = {};
+    for (const p of all) {
+      counts[p.id] = tradeStorage.getByPortfolio(p.id).length;
+    }
+    setTradeCounts(counts);
+  }
+
+  function openCreate() {
+    setEditTarget(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(portfolio: Portfolio) {
+    setEditTarget(portfolio);
+    setModalOpen(true);
+  }
+
+  function handleFormSubmit(data: Omit<Portfolio, "id" | "createdAt">) {
+    if (editTarget) {
+      portfolioStorage.update(editTarget.id, data);
+      toast.success("Portfolio updated");
+    } else {
+      portfolioStorage.create(data);
+      toast.success("Portfolio created");
+    }
+    setModalOpen(false);
+    reload();
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    portfolioStorage.delete(deleteTarget.id);
+    toast.success(`"${deleteTarget.name}" deleted`);
+    setDeleteTarget(null);
+    reload();
+  }
+
+  const label = portfolios.length === 1 ? "1 account" : `${portfolios.length} accounts`;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
+            Portfolios
+          </h1>
+          <p className="text-[12px] text-[#475569] mt-1.5">{label}</p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 h-8 px-3 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+          New Portfolio
+        </button>
+      </div>
+
+      {portfolios.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center rounded-xl border border-[#1e293b] bg-[#0e1223]">
+          <div className="w-12 h-12 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 14 14" fill="none">
+              <polyline
+                points="1,10 4,6 7,8 10,3 13,1"
+                stroke="#475569"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <p className="text-[14px] font-semibold text-[#f8fafc] mb-2">No portfolios yet</p>
+          <p className="text-[12px] text-[#475569] max-w-xs mb-6 leading-relaxed">
+            Create your first portfolio to start journaling trades.
+          </p>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 h-8 px-4 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            Create Portfolio
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {portfolios.map((p) => (
+            <PortfolioCard
+              key={p.id}
+              portfolio={p}
+              tradeCount={tradeCounts[p.id] ?? 0}
+              onEdit={() => openEdit(p)}
+              onDelete={() => setDeleteTarget(p)}
+            />
+          ))}
+        </div>
+      )}
+
+      <PortfolioFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleFormSubmit}
+        initial={editTarget}
+      />
+
+      <DeleteConfirmDialog
+        open={!!deleteTarget}
+        portfolioName={deleteTarget?.name ?? ""}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
+    </div>
+  );
+}
