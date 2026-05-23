@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -9,8 +10,10 @@ import {
   ClipboardList,
   CalendarCheck,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -55,6 +58,24 @@ function NavItem({
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+    });
+  }, []);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  const initial = email ? email[0].toUpperCase() : "T";
 
   return (
     <aside className="hidden md:flex flex-col w-[220px] shrink-0 h-screen sticky top-0 z-30 bg-[#020617] border-r border-[#1e293b]">
@@ -103,15 +124,21 @@ export function Sidebar() {
           active={pathname === "/settings"}
         />
 
-        {/* User stub */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg border border-[#1e293b] bg-[#0f172a]/50">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg border border-[#1e293b] bg-[#0f172a]/50 group">
           <div className="w-6 h-6 rounded-full bg-[#1e293b] flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-bold text-[#94a3b8]">T</span>
+            <span className="text-[10px] font-bold text-[#94a3b8]">{initial}</span>
           </div>
-          <div className="min-w-0">
-            <p className="text-[12px] font-medium text-[#cbd5e1] truncate leading-none">Trader</p>
-            <p className="text-[10px] text-[#475569] mt-0.5 leading-none">Phase 1</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-[#cbd5e1] truncate leading-none">{email ?? "—"}</p>
+            <p className="text-[10px] text-[#475569] mt-0.5 leading-none">TradeHabit</p>
           </div>
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-[#1e293b] text-[#475569] hover:text-[#f8fafc] cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>

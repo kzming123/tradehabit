@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, CalendarCheck, FolderOpen } from "lucide-react";
-import { portfolioStorage, tradeStorage } from "@/lib/storage";
+import { getPortfolios } from "@/lib/db/portfolios";
+import { getTrades } from "@/lib/db/trades";
 import { buildAnalytics } from "@/lib/analytics";
 import { Portfolio, Trade } from "@/types";
 import { StatsRow } from "@/components/dashboard/StatsRow";
@@ -12,8 +13,7 @@ import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { PortfolioFilter } from "@/components/dashboard/PortfolioFilter";
 import { InsightCards } from "@/components/dashboard/InsightCards";
-
-// ── Empty state ───────────────────────────────────────────────────────────────
+import { toast } from "sonner";
 
 function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
   return (
@@ -66,24 +66,26 @@ function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function DashboardPage() {
-  const [portfolios,  setPortfolios]  = useState<Portfolio[]>([]);
-  const [trades,      setTrades]      = useState<Trade[]>([]);
-  const [selected,    setSelected]    = useState<string>("all");
-  const [hydrated,    setHydrated]    = useState(false);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [trades,     setTrades]     = useState<Trade[]>([]);
+  const [selected,   setSelected]   = useState<string>("all");
+  const [hydrated,   setHydrated]   = useState(false);
 
   useEffect(() => {
-    portfolioStorage.seedIfEmpty();
-    tradeStorage.seedIfEmpty();
-    const ps = portfolioStorage.getAll();
-    const ts = tradeStorage.getAll();
-    setPortfolios(ps);
-    setTrades(ts);
-    // Default to first portfolio if only one exists
-    if (ps.length === 1) setSelected(ps[0].id);
-    setHydrated(true);
+    async function load() {
+      try {
+        const [ps, ts] = await Promise.all([getPortfolios(), getTrades()]);
+        setPortfolios(ps);
+        setTrades(ts);
+        if (ps.length === 1) setSelected(ps[0].id);
+      } catch {
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setHydrated(true);
+      }
+    }
+    load();
   }, []);
 
   const analytics = useMemo(
@@ -96,13 +98,11 @@ export default function DashboardPage() {
     [portfolios]
   );
 
-  // Currency: use selected portfolio's currency, or "USDT" for all
   const currency = useMemo(() => {
     if (selected === "all") return "USDT";
     return portfolios.find((p) => p.id === selected)?.currency ?? "USDT";
   }, [selected, portfolios]);
 
-  // Subtitle
   const subtitle = useMemo(() => {
     const now = new Date();
     const month = now.toLocaleString("en-US", { month: "long", year: "numeric" });
@@ -116,12 +116,10 @@ export default function DashboardPage() {
     (t) => selected === "all" || t.portfolioId === selected
   ).length > 0;
 
-  // Don't render until hydrated (avoids SSR mismatch with localStorage)
   if (!hydrated) return null;
 
   return (
     <div className="space-y-5">
-      {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
@@ -136,17 +134,14 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* KPI row — always show if there are portfolios */}
       {hasPortfolios && (
         <StatsRow analytics={analytics} currency={currency} />
       )}
 
-      {/* Main content */}
       {!hasPortfolios || !hasTrades ? (
         <EmptyDashboard hasPortfolios={hasPortfolios} />
       ) : (
         <>
-          {/* Chart + Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-4">
             <PnlChart
               curve={analytics.pnlCurve}
@@ -159,10 +154,8 @@ export default function DashboardPage() {
             <QuickActions />
           </div>
 
-          {/* Insight cards */}
           <InsightCards analytics={analytics} currency={currency} />
 
-          {/* Recent trades */}
           <RecentTrades
             trades={analytics.recentTrades}
             portfolioMap={portfolioMap}

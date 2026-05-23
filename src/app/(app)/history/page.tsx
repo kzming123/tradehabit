@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { tradeStorage, portfolioStorage } from "@/lib/storage";
+import { getTrades } from "@/lib/db/trades";
+import { getPortfolios } from "@/lib/db/portfolios";
 import { Trade, Portfolio } from "@/types";
 import Link from "next/link";
 import {
@@ -14,8 +15,7 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+import { toast } from "sonner";
 
 function formatDateTime(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -37,17 +37,6 @@ const EMOTION_META: Record<string, { label: string; emoji: string; color: string
   revenge:     { label: "Revenge",     emoji: "😤", color: "text-[#ef4444]",  bg: "bg-[#ef4444]/10 border-[#ef4444]/20"  },
 };
 
-const MISTAKE_LABELS: Record<string, string> = {
-  no_stop: "No Stop Loss",
-  early_exit: "Early Exit",
-  oversized: "Oversized",
-  fomo_entry: "FOMO Entry",
-  revenge_trade: "Revenge Trade",
-  broke_rules: "Broke Rules",
-  moved_sl: "Moved SL",
-  overtraded: "Overtraded",
-};
-
 type SortKey = "date_desc" | "date_asc" | "pnl_desc" | "pnl_asc";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
@@ -57,24 +46,31 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "pnl_asc",   label: "PnL low → high" },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function HistoryPage() {
-  const [trades, setTrades]               = useState<Trade[]>([]);
-  const [portfolios, setPortfolios]       = useState<Portfolio[]>([]);
-  const [search, setSearch]               = useState("");
-  const [filterPortfolio, setFilterPortfolio] = useState("all");
-  const [filterOutcome, setFilterOutcome] = useState("all");
-  const [filterDirection, setFilterDirection] = useState("all");
-  const [filterEmotion, setFilterEmotion] = useState("all");
-  const [sortKey, setSortKey]             = useState<SortKey>("date_desc");
-  const [sortOpen, setSortOpen]           = useState(false);
+  const [trades,     setTrades]     = useState<Trade[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,             setSearch]             = useState("");
+  const [filterPortfolio,    setFilterPortfolio]    = useState("all");
+  const [filterOutcome,      setFilterOutcome]      = useState("all");
+  const [filterDirection,    setFilterDirection]    = useState("all");
+  const [filterEmotion,      setFilterEmotion]      = useState("all");
+  const [sortKey,            setSortKey]            = useState<SortKey>("date_desc");
+  const [sortOpen,           setSortOpen]           = useState(false);
 
   useEffect(() => {
-    portfolioStorage.seedIfEmpty();
-    tradeStorage.seedIfEmpty();
-    setPortfolios(portfolioStorage.getAll());
-    setTrades(tradeStorage.getAll());
+    async function load() {
+      try {
+        const [ts, ps] = await Promise.all([getTrades(), getPortfolios()]);
+        setTrades(ts);
+        setPortfolios(ps);
+      } catch {
+        toast.error("Failed to load trades");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
   const portfolioMap = useMemo(
@@ -85,9 +81,9 @@ export default function HistoryPage() {
   const filtered = useMemo(() => {
     let list = trades.filter((t) => {
       if (filterPortfolio !== "all" && t.portfolioId !== filterPortfolio) return false;
-      if (filterOutcome !== "all" && t.outcome !== filterOutcome) return false;
-      if (filterDirection !== "all" && t.direction !== filterDirection) return false;
-      if (filterEmotion !== "all" && t.emotionBefore !== filterEmotion) return false;
+      if (filterOutcome   !== "all" && t.outcome     !== filterOutcome)   return false;
+      if (filterDirection !== "all" && t.direction   !== filterDirection) return false;
+      if (filterEmotion   !== "all" && t.emotionBefore !== filterEmotion) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (
@@ -110,26 +106,23 @@ export default function HistoryPage() {
     return list;
   }, [trades, filterPortfolio, filterOutcome, filterDirection, filterEmotion, search, sortKey]);
 
-  // Stats bar
-  const totalPnl   = filtered.reduce((s, t) => s + t.pnl, 0);
-  const wins       = filtered.filter((t) => t.outcome === "win").length;
-  const winRate    = filtered.length > 0 ? Math.round((wins / filtered.length) * 100) : 0;
+  const totalPnl = filtered.reduce((s, t) => s + t.pnl, 0);
+  const wins     = filtered.filter((t) => t.outcome === "win").length;
+  const winRate  = filtered.length > 0 ? Math.round((wins / filtered.length) * 100) : 0;
 
   function resetFilters() {
-    setSearch("");
-    setFilterPortfolio("all");
-    setFilterOutcome("all");
-    setFilterDirection("all");
-    setFilterEmotion("all");
+    setSearch(""); setFilterPortfolio("all"); setFilterOutcome("all");
+    setFilterDirection("all"); setFilterEmotion("all");
   }
 
   const hasActiveFilter =
     search || filterPortfolio !== "all" || filterOutcome !== "all" ||
     filterDirection !== "all" || filterEmotion !== "all";
 
+  if (loading) return null;
+
   return (
     <div className="space-y-5">
-      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
@@ -146,25 +139,12 @@ export default function HistoryPage() {
         </Link>
       </div>
 
-      {/* ── Stats bar ── */}
       {filtered.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            {
-              label: "Total PnL",
-              value: `${totalPnl >= 0 ? "+" : ""}$${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-              accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]",
-            },
-            {
-              label: "Win Rate",
-              value: `${winRate}%`,
-              accent: "text-[#f8fafc]",
-            },
-            {
-              label: "Trades",
-              value: String(filtered.length),
-              accent: "text-[#f8fafc]",
-            },
+            { label: "Total PnL",  value: `${totalPnl >= 0 ? "+" : ""}$${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]" },
+            { label: "Win Rate",   value: `${winRate}%`,              accent: "text-[#f8fafc]" },
+            { label: "Trades",     value: String(filtered.length),    accent: "text-[#f8fafc]" },
           ].map(({ label, value, accent }) => (
             <div key={label} className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3">
               <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-1">{label}</p>
@@ -174,10 +154,8 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* ── Filters ── */}
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2 items-center">
-          {/* Search */}
           <div className="relative flex-1 min-w-[160px] max-w-[260px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#334155]" />
             <input
@@ -188,7 +166,6 @@ export default function HistoryPage() {
             />
           </div>
 
-          {/* Portfolio */}
           {portfolios.length > 1 && (
             <select
               value={filterPortfolio}
@@ -202,7 +179,6 @@ export default function HistoryPage() {
             </select>
           )}
 
-          {/* Emotion filter */}
           <select
             value={filterEmotion}
             onChange={(e) => setFilterEmotion(e.target.value)}
@@ -214,7 +190,6 @@ export default function HistoryPage() {
             ))}
           </select>
 
-          {/* Sort */}
           <div className="relative">
             <button
               onClick={() => setSortOpen((v) => !v)}
@@ -232,9 +207,7 @@ export default function HistoryPage() {
                     onClick={() => { setSortKey(o.value); setSortOpen(false); }}
                     className={cn(
                       "w-full text-left px-4 py-2.5 text-[13px] transition-colors",
-                      sortKey === o.value
-                        ? "text-[#f8fafc] bg-[#0f172a]"
-                        : "text-[#475569] hover:text-[#f8fafc] hover:bg-[#0f172a]"
+                      sortKey === o.value ? "text-[#f8fafc] bg-[#0f172a]" : "text-[#475569] hover:text-[#f8fafc] hover:bg-[#0f172a]"
                     )}
                   >
                     {o.label}
@@ -254,9 +227,7 @@ export default function HistoryPage() {
           )}
         </div>
 
-        {/* Outcome + Direction row */}
         <div className="flex flex-wrap gap-2">
-          {/* Outcome pills */}
           <div className="flex items-center gap-1">
             {(["all", "win", "loss", "breakeven"] as const).map((o) => (
               <button
@@ -265,10 +236,8 @@ export default function HistoryPage() {
                 className={cn(
                   "h-7 px-2.5 rounded-md text-[11px] font-semibold border capitalize transition-colors cursor-pointer",
                   filterOutcome === o
-                    ? o === "win"
-                      ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
-                      : o === "loss"
-                      ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
+                    ? o === "win" ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
+                      : o === "loss" ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
                       : "bg-[#f8fafc]/10 border-[#f8fafc]/20 text-[#f8fafc]"
                     : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
                 )}
@@ -280,7 +249,6 @@ export default function HistoryPage() {
 
           <div className="w-px bg-[#1e293b] self-stretch mx-1 hidden sm:block" />
 
-          {/* Direction pills */}
           <div className="flex items-center gap-1">
             {(["all", "long", "short"] as const).map((d) => (
               <button
@@ -289,10 +257,8 @@ export default function HistoryPage() {
                 className={cn(
                   "h-7 px-2.5 rounded-md text-[11px] font-semibold border capitalize transition-colors cursor-pointer flex items-center gap-1",
                   filterDirection === d
-                    ? d === "long"
-                      ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
-                      : d === "short"
-                      ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
+                    ? d === "long" ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
+                      : d === "short" ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
                       : "bg-[#f8fafc]/10 border-[#f8fafc]/20 text-[#f8fafc]"
                     : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
                 )}
@@ -306,12 +272,8 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* ── Close sort dropdown on outside click ── */}
-      {sortOpen && (
-        <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-      )}
+      {sortOpen && <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />}
 
-      {/* ── Empty state ── */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 rounded-xl border border-[#1e293b] bg-[#0e1223] text-center">
           <BookOpen className="w-9 h-9 text-[#1e293b] mb-4" />
@@ -319,9 +281,7 @@ export default function HistoryPage() {
             {trades.length === 0 ? "No trades yet" : "No trades match"}
           </p>
           <p className="text-[12px] text-[#334155] mb-6 max-w-xs leading-relaxed">
-            {trades.length === 0
-              ? "Start logging trades to build your journal."
-              : "Try adjusting your filters."}
+            {trades.length === 0 ? "Start logging trades to build your journal." : "Try adjusting your filters."}
           </p>
           {trades.length === 0 && (
             <Link
@@ -335,7 +295,6 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] overflow-hidden">
-          {/* Table header */}
           <div className="hidden md:grid grid-cols-[4px_1fr_100px_80px_80px_100px] gap-4 px-5 py-3 border-b border-[#1e293b]">
             <span />
             <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Trade</span>
@@ -360,92 +319,28 @@ export default function HistoryPage() {
                   idx !== filtered.length - 1 && "border-b border-[#0f172a]"
                 )}
               >
-                {/* Color bar */}
-                <div
-                  className={cn(
-                    "w-[4px] h-10 rounded-full shrink-0",
-                    isWin ? "bg-[#22c55e]/50" : isLoss ? "bg-[#ef4444]/50" : "bg-[#475569]/30"
-                  )}
-                />
-
-                {/* Main info */}
+                <div className={cn("w-[4px] h-10 rounded-full shrink-0", isWin ? "bg-[#22c55e]/50" : isLoss ? "bg-[#ef4444]/50" : "bg-[#475569]/30")} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-[#f8fafc]">{trade.pair}</span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded",
-                        trade.direction === "long"
-                          ? "bg-[#22c55e]/10 text-[#22c55e]/80"
-                          : "bg-[#ef4444]/10 text-[#ef4444]/80"
-                      )}
-                    >
-                      {trade.direction}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold capitalize px-1.5 py-0.5 rounded",
-                        isWin
-                          ? "bg-[#22c55e]/10 text-[#22c55e]"
-                          : isLoss
-                          ? "bg-[#ef4444]/10 text-[#ef4444]"
-                          : "bg-[#1e293b] text-[#94a3b8]"
-                      )}
-                    >
-                      {trade.outcome}
-                    </span>
+                    <span className={cn("text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded", trade.direction === "long" ? "bg-[#22c55e]/10 text-[#22c55e]/80" : "bg-[#ef4444]/10 text-[#ef4444]/80")}>{trade.direction}</span>
+                    <span className={cn("text-[10px] font-semibold capitalize px-1.5 py-0.5 rounded", isWin ? "bg-[#22c55e]/10 text-[#22c55e]" : isLoss ? "bg-[#ef4444]/10 text-[#ef4444]" : "bg-[#1e293b] text-[#94a3b8]")}>{trade.outcome}</span>
                   </div>
-                  <p className="text-[11px] text-[#475569] mt-0.5 truncate">
-                    {portfolio?.name ?? "—"} · {trade.market}
-                  </p>
-                  {/* Mobile: show setup + date below */}
+                  <p className="text-[11px] text-[#475569] mt-0.5 truncate">{portfolio?.name ?? "—"} · {trade.market}</p>
                   <div className="flex items-center gap-3 mt-1 md:hidden">
-                    {trade.setupTag && (
-                      <span className="text-[10px] font-semibold text-[#475569] bg-[#0f172a] border border-[#1e293b] px-1.5 py-0.5 rounded">
-                        {trade.setupTag}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-[#334155]">
-                      {formatDateTime(trade.dateTime)}
-                    </span>
+                    {trade.setupTag && <span className="text-[10px] font-semibold text-[#475569] bg-[#0f172a] border border-[#1e293b] px-1.5 py-0.5 rounded">{trade.setupTag}</span>}
+                    <span className="text-[10px] text-[#334155]">{formatDateTime(trade.dateTime)}</span>
                   </div>
                 </div>
-
-                {/* Setup tag (desktop) */}
                 <div className="hidden md:block">
-                  {trade.setupTag ? (
-                    <span className="text-[11px] font-semibold text-[#475569] bg-[#0f172a] border border-[#1e293b] px-2 py-0.5 rounded-md truncate block max-w-full">
-                      {trade.setupTag}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-[#334155]">—</span>
-                  )}
+                  {trade.setupTag ? <span className="text-[11px] font-semibold text-[#475569] bg-[#0f172a] border border-[#1e293b] px-2 py-0.5 rounded-md truncate block max-w-full">{trade.setupTag}</span> : <span className="text-[11px] text-[#334155]">—</span>}
                 </div>
-
-                {/* Emotion (desktop) */}
                 <div className="hidden md:block">
-                  {emo ? (
-                    <span className={cn("text-[11px] font-semibold border px-2 py-0.5 rounded-md", emo.color, emo.bg)}>
-                      {emo.emoji} {emo.label}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-[#334155]">—</span>
-                  )}
+                  {emo ? <span className={cn("text-[11px] font-semibold border px-2 py-0.5 rounded-md", emo.color, emo.bg)}>{emo.emoji} {emo.label}</span> : <span className="text-[11px] text-[#334155]">—</span>}
                 </div>
-
-                {/* Date (desktop) */}
-                <p className="text-[11px] text-[#334155] tabular text-right hidden md:block whitespace-nowrap">
-                  {formatDateTime(trade.dateTime)}
-                </p>
-
-                {/* PnL */}
+                <p className="text-[11px] text-[#334155] tabular text-right hidden md:block whitespace-nowrap">{formatDateTime(trade.dateTime)}</p>
                 <div className="text-right ml-auto md:ml-0 shrink-0">
-                  <p
-                    className={cn(
-                      "text-[13px] font-bold tabular leading-none",
-                      isWin ? "text-[#22c55e]" : isLoss ? "text-[#ef4444]" : "text-[#94a3b8]"
-                    )}
-                  >
+                  <p className={cn("text-[13px] font-bold tabular leading-none", isWin ? "text-[#22c55e]" : isLoss ? "text-[#ef4444]" : "text-[#94a3b8]")}>
                     {trade.pnl >= 0 ? "+" : ""}${Math.abs(trade.pnl).toFixed(0)}
                   </p>
                   <p className="text-[10px] text-[#475569] tabular mt-0.5 leading-none">

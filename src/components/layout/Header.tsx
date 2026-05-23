@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 
 const pageMeta: Record<string, { title: string; desc: string }> = {
-  "/": { title: "Dashboard", desc: "Binance Main" },
+  "/": { title: "Dashboard", desc: "Trading overview" },
   "/portfolios": { title: "Portfolios", desc: "Your accounts" },
   "/add-trade": { title: "Add Trade", desc: "New journal entry" },
   "/history": { title: "Trade History", desc: "All trades" },
@@ -39,12 +39,6 @@ export function Header() {
           {meta.title}
         </p>
         <p className="text-[11px] text-[#475569] mt-0.5 leading-none">{meta.desc}</p>
-      </div>
-
-      {/* Balance pill */}
-      <div className="flex items-center gap-1.5 h-7 px-3 rounded-full border border-[#1e293b] bg-[#0f172a]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
-        <span className="text-[11px] font-medium text-[#94a3b8] tabular">$12,480</span>
       </div>
 
       {/* Settings icon (mobile only — desktop uses sidebar) */}

@@ -3,32 +3,41 @@
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Portfolio } from "@/types";
-import { portfolioStorage, tradeStorage } from "@/lib/storage";
+import {
+  getPortfolios,
+  createPortfolio,
+  updatePortfolio,
+  deletePortfolio,
+  getPortfolioTradeCounts,
+} from "@/lib/db/portfolios";
 import { PortfolioCard } from "@/components/portfolios/PortfolioCard";
 import { PortfolioFormModal } from "@/components/portfolios/PortfolioFormModal";
 import { DeleteConfirmDialog } from "@/components/portfolios/DeleteConfirmDialog";
 import { toast } from "sonner";
 
 export default function PortfoliosPage() {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [portfolios,  setPortfolios]  = useState<Portfolio[]>([]);
   const [tradeCounts, setTradeCounts] = useState<Record<string, number>>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Portfolio | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [modalOpen,   setModalOpen]   = useState(false);
+  const [editTarget,  setEditTarget]  = useState<Portfolio | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Portfolio | null>(null);
 
-  useEffect(() => {
-    portfolioStorage.seedIfEmpty();
-    reload();
-  }, []);
+  useEffect(() => { reload(); }, []);
 
-  function reload() {
-    const all = portfolioStorage.getAll();
-    setPortfolios(all);
-    const counts: Record<string, number> = {};
-    for (const p of all) {
-      counts[p.id] = tradeStorage.getByPortfolio(p.id).length;
+  async function reload() {
+    try {
+      const [all, counts] = await Promise.all([
+        getPortfolios(),
+        getPortfolioTradeCounts(),
+      ]);
+      setPortfolios(all);
+      setTradeCounts(counts);
+    } catch {
+      toast.error("Failed to load portfolios");
+    } finally {
+      setLoading(false);
     }
-    setTradeCounts(counts);
   }
 
   function openCreate() {
@@ -41,31 +50,40 @@ export default function PortfoliosPage() {
     setModalOpen(true);
   }
 
-  function handleFormSubmit(data: Omit<Portfolio, "id" | "createdAt">) {
-    if (editTarget) {
-      portfolioStorage.update(editTarget.id, data);
-      toast.success("Portfolio updated");
-    } else {
-      portfolioStorage.create(data);
-      toast.success("Portfolio created");
+  async function handleFormSubmit(data: Omit<Portfolio, "id" | "createdAt">) {
+    try {
+      if (editTarget) {
+        await updatePortfolio(editTarget.id, data);
+        toast.success("Portfolio updated");
+      } else {
+        await createPortfolio(data);
+        toast.success("Portfolio created");
+      }
+      setModalOpen(false);
+      reload();
+    } catch {
+      toast.error("Failed to save portfolio");
     }
-    setModalOpen(false);
-    reload();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return;
-    portfolioStorage.delete(deleteTarget.id);
-    toast.success(`"${deleteTarget.name}" deleted`);
-    setDeleteTarget(null);
-    reload();
+    try {
+      await deletePortfolio(deleteTarget.id);
+      toast.success(`"${deleteTarget.name}" deleted`);
+      setDeleteTarget(null);
+      reload();
+    } catch {
+      toast.error("Failed to delete portfolio");
+    }
   }
 
   const label = portfolios.length === 1 ? "1 account" : `${portfolios.length} accounts`;
 
+  if (loading) return null;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
