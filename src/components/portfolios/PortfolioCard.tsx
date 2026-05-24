@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { fmtMoney } from "@/lib/format";
 import Link from "next/link";
 
 const STYLE_LABELS: Record<string, string> = {
@@ -64,7 +65,7 @@ export function PortfolioCard({ portfolio, tradeCount, onEdit, onDelete }: Props
 
         {/* Balance */}
         <p className="text-[28px] font-bold leading-none tracking-[-0.03em] text-[#f8fafc] tabular">
-          {currency} {startingBalance.toLocaleString()}
+          {fmtMoney(currency, startingBalance)}
         </p>
 
         {/* Stats row */}

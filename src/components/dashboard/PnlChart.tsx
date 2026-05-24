@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { PnlPoint, filterCurveByRange } from "@/lib/analytics";
+import { fmtMoney, fmtMoneySigned } from "@/lib/format";
 
 const RANGES = ["7D", "1M", "3M", "All"] as const;
 
@@ -63,21 +64,18 @@ export function PnlChart({ curve, currentBalance, totalPnl, returnPct, currency,
           <p className="text-[11px] font-semibold text-[#475569] uppercase tracking-[0.08em] mb-2">
             Portfolio Balance
           </p>
-          <p className="text-[32px] font-bold leading-none tracking-[-0.03em] text-[#f8fafc] tabular">
-            {currency}{" "}
-            {displayBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          <p className="text-[28px] sm:text-[32px] font-bold leading-none tracking-[-0.03em] text-[#f8fafc] tabular">
+            {fmtMoney(currency, displayBalance)}
           </p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {hasData ? (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold",
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tabular",
                   pnlUp ? "text-[#22c55e] bg-[#22c55e]/10" : "text-[#ef4444] bg-[#ef4444]/10"
                 )}
               >
-                {pnlUp ? "+" : ""}{currency}{" "}
-                {Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                {" "}({pnlUp ? "+" : ""}{returnPct.toFixed(1)}%)
+                {fmtMoneySigned(currency, totalPnl)} ({pnlUp ? "+" : ""}{returnPct.toFixed(1)}%)
               </span>
             ) : (
               <span className="text-[11px] text-[#334155]">No trades yet</span>

@@ -15,6 +15,9 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
+import { Skeleton, StatCardSkeleton, TradeRowSkeleton } from "@/components/shared/Skeleton";
+import { PairDisplay } from "@/components/shared/PairDisplay";
+import { fmtMoneySigned } from "@/lib/format";
 import { toast } from "sonner";
 
 function formatDateTime(dateStr: string) {
@@ -119,7 +122,25 @@ export default function HistoryPage() {
     search || filterPortfolio !== "all" || filterOutcome !== "all" ||
     filterDirection !== "all" || filterEmotion !== "all";
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <div className="rounded-xl border border-[#1e293b] bg-[#0e1223]">
+          {[0, 1, 2, 3, 4].map((i) => <TradeRowSkeleton key={i} />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -142,7 +163,7 @@ export default function HistoryPage() {
       {filtered.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total PnL",  value: `${totalPnl >= 0 ? "+" : ""}$${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]" },
+            { label: "Total PnL",  value: fmtMoneySigned("$", totalPnl), accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]" },
             { label: "Win Rate",   value: `${winRate}%`,              accent: "text-[#f8fafc]" },
             { label: "Trades",     value: String(filtered.length),    accent: "text-[#f8fafc]" },
           ].map(({ label, value, accent }) => (
@@ -322,7 +343,7 @@ export default function HistoryPage() {
                 <div className={cn("w-[4px] h-10 rounded-full shrink-0", isWin ? "bg-[#22c55e]/50" : isLoss ? "bg-[#ef4444]/50" : "bg-[#475569]/30")} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-bold text-[#f8fafc]">{trade.pair}</span>
+                    <PairDisplay pair={trade.pair} className="text-[13px] font-bold text-[#f8fafc]" />
                     <span className={cn("text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded", trade.direction === "long" ? "bg-[#22c55e]/10 text-[#22c55e]/80" : "bg-[#ef4444]/10 text-[#ef4444]/80")}>{trade.direction}</span>
                     <span className={cn("text-[10px] font-semibold capitalize px-1.5 py-0.5 rounded", isWin ? "bg-[#22c55e]/10 text-[#22c55e]" : isLoss ? "bg-[#ef4444]/10 text-[#ef4444]" : "bg-[#1e293b] text-[#94a3b8]")}>{trade.outcome}</span>
                   </div>
@@ -341,7 +362,7 @@ export default function HistoryPage() {
                 <p className="text-[11px] text-[#334155] tabular text-right hidden md:block whitespace-nowrap">{formatDateTime(trade.dateTime)}</p>
                 <div className="text-right ml-auto md:ml-0 shrink-0">
                   <p className={cn("text-[13px] font-bold tabular leading-none", isWin ? "text-[#22c55e]" : isLoss ? "text-[#ef4444]" : "text-[#94a3b8]")}>
-                    {trade.pnl >= 0 ? "+" : ""}${Math.abs(trade.pnl).toFixed(0)}
+                    {fmtMoneySigned(portfolio?.currency ?? "$", trade.pnl)}
                   </p>
                   <p className="text-[10px] text-[#475569] tabular mt-0.5 leading-none">
                     {trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%

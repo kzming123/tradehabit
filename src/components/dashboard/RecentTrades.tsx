@@ -2,6 +2,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 import { Trade, Portfolio } from "@/types";
+import { PairDisplay } from "@/components/shared/PairDisplay";
+import { fmtMoneySigned } from "@/lib/format";
 
 interface Props {
   trades: Trade[];
@@ -74,7 +76,7 @@ export function RecentTrades({ trades, portfolioMap, currency }: Props) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-semibold text-[#f8fafc]">{trade.pair}</span>
+                    <PairDisplay pair={trade.pair} className="text-[13px] font-semibold text-[#f8fafc]" />
                     <span
                       className={cn(
                         "text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded",
@@ -103,8 +105,7 @@ export function RecentTrades({ trades, portfolioMap, currency }: Props) {
                     "text-[13px] font-bold tabular leading-none",
                     isWin ? "text-[#22c55e]" : isLoss ? "text-[#ef4444]" : "text-[#94a3b8]"
                   )}>
-                    {trade.pnl >= 0 ? "+" : ""}{currency}{" "}
-                    {Math.abs(trade.pnl).toFixed(0)}
+                    {fmtMoneySigned(currency, trade.pnl)}
                   </p>
                   <p className="text-[10px] text-[#475569] tabular mt-0.5 leading-none">
                     {trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%

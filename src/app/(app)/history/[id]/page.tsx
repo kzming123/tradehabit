@@ -10,6 +10,8 @@ import { Trade, Portfolio } from "@/types";
 import { getTradeById, deleteTrade } from "@/lib/db/trades";
 import { getPortfolioById } from "@/lib/db/portfolios";
 import { DeleteTradeDialog } from "@/components/trades/DeleteTradeDialog";
+import { PairDisplay } from "@/components/shared/PairDisplay";
+import { fmtMoney, fmtMoneySigned } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -122,24 +124,24 @@ export default function TradeDetailPage() {
         <div className="flex items-start justify-between mb-5">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-[20px] font-bold tracking-[-0.02em] text-[#f8fafc]">{trade.pair}</h1>
+              <PairDisplay pair={trade.pair} className="text-[20px] font-bold tracking-[-0.02em] text-[#f8fafc]" />
               <span className={cn("text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md", trade.direction === "long" ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]")}>{trade.direction}</span>
               <span className={cn("text-[11px] font-semibold capitalize px-2 py-0.5 rounded-md", isWin ? "bg-[#22c55e]/10 text-[#22c55e]" : isLoss ? "bg-[#ef4444]/10 text-[#ef4444]" : "bg-[#1e293b] text-[#94a3b8]")}>{trade.outcome}</span>
             </div>
             <p className="text-[12px] text-[#475569] mt-1">{portfolio?.name ?? "—"} · {trade.market} · {formatDateTime(trade.dateTime)}</p>
           </div>
           <div className="text-right">
-            <p className={cn("text-[26px] font-bold tabular leading-none tracking-[-0.02em]", pnlColor)}>{trade.pnl >= 0 ? "+" : ""}{portfolio?.currency ?? "$"}{formatNum(Math.abs(trade.pnl))}</p>
+            <p className={cn("text-[26px] font-bold tabular leading-none tracking-[-0.02em]", pnlColor)}>{fmtMoneySigned(portfolio?.currency ?? "$", trade.pnl, 2)}</p>
             <p className={cn("text-[13px] font-semibold tabular mt-0.5", pnlColor)}>{trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Entry",    value: `$${formatNum(trade.entryPrice)}` },
-            { label: "Exit",     value: `$${formatNum(trade.exitPrice)}`  },
+            { label: "Entry",    value: fmtMoney(portfolio?.currency ?? "$", trade.entryPrice, 2) },
+            { label: "Exit",     value: fmtMoney(portfolio?.currency ?? "$", trade.exitPrice, 2)  },
             { label: "Size",     value: formatNum(trade.positionSize, 4)  },
-            { label: "Currency", value: portfolio?.currency ?? "USDT"     },
+            { label: "Currency", value: portfolio?.currency ?? "USD"      },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-lg bg-[#0f172a] border border-[#1e293b] px-3 py-2.5">
               <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-1">{label}</p>

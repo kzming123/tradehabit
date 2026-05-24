@@ -13,6 +13,7 @@ import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { PortfolioFilter } from "@/components/dashboard/PortfolioFilter";
 import { InsightCards } from "@/components/dashboard/InsightCards";
+import { Skeleton, StatCardSkeleton, TradeRowSkeleton } from "@/components/shared/Skeleton";
 import { toast } from "sonner";
 
 function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
@@ -99,8 +100,8 @@ export default function DashboardPage() {
   );
 
   const currency = useMemo(() => {
-    if (selected === "all") return "USDT";
-    return portfolios.find((p) => p.id === selected)?.currency ?? "USDT";
+    if (selected === "all") return "$";
+    return portfolios.find((p) => p.id === selected)?.currency ?? "$";
   }, [selected, portfolios]);
 
   const subtitle = useMemo(() => {
@@ -116,7 +117,30 @@ export default function DashboardPage() {
     (t) => selected === "all" || t.portfolioId === selected
   ).length > 0;
 
-  if (!hydrated) return null;
+  if (!hydrated) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3 w-44" />
+          </div>
+          <Skeleton className="h-8 w-32" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-4">
+          <Skeleton className="h-52 lg:h-64" />
+          <Skeleton className="hidden lg:block h-64" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <div className="rounded-xl border border-[#1e293b] bg-[#0e1223]">
+          <div className="px-5 py-4 border-b border-[#0f172a]"><Skeleton className="h-4 w-32" /></div>
+          {[0, 1, 2].map((i) => <TradeRowSkeleton key={i} />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -134,14 +158,14 @@ export default function DashboardPage() {
         />
       </div>
 
-      {hasPortfolios && (
-        <StatsRow analytics={analytics} currency={currency} />
-      )}
-
       {!hasPortfolios || !hasTrades ? (
-        <EmptyDashboard hasPortfolios={hasPortfolios} />
+        <>
+          {hasPortfolios && <StatsRow analytics={analytics} currency={currency} />}
+          <EmptyDashboard hasPortfolios={hasPortfolios} />
+        </>
       ) : (
         <>
+          {/* Hero chart leads the page */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-4">
             <PnlChart
               curve={analytics.pnlCurve}
@@ -151,8 +175,12 @@ export default function DashboardPage() {
               currency={currency}
               startingBalance={analytics.startingBalance}
             />
-            <QuickActions />
+            <div className="hidden lg:block">
+              <QuickActions />
+            </div>
           </div>
+
+          <StatsRow analytics={analytics} currency={currency} />
 
           <InsightCards analytics={analytics} currency={currency} />
 

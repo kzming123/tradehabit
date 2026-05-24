@@ -14,6 +14,7 @@ import {
 import {
   calcWeekAnalytics, getWeekBounds, formatWeekRange, weekStartISO,
 } from "@/lib/analytics";
+import { fmtMoneySigned } from "@/lib/format";
 import { Portfolio, WeeklyReview } from "@/types";
 import { toast } from "sonner";
 
@@ -42,11 +43,11 @@ const RATING_LABELS: Record<number, { label: string; color: string }> = {
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] overflow-hidden">
-      <div className="px-5 py-4 border-b border-[#0f172a]">
+      <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-[#0f172a]">
         <p className="text-[14px] font-semibold text-[#f8fafc]">{title}</p>
         {description && <p className="text-[12px] text-[#475569] mt-0.5">{description}</p>}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </div>
   );
 }
@@ -59,9 +60,9 @@ function Textarea({ placeholder, rows = 2, value, onChange }: { placeholder: str
 
 function StatPill({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3.5 text-center">
-      <p className={cn("text-[20px] font-bold leading-none tracking-tight tabular-nums", color)}>{value}</p>
-      <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] mt-1.5">{label}</p>
+    <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-3 py-3 sm:px-4 sm:py-3.5 text-center min-w-0">
+      <p className={cn("text-[17px] sm:text-[20px] font-bold leading-none tracking-tight tabular-nums truncate", color)}>{value}</p>
+      <p className="text-[9px] sm:text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] mt-1.5 truncate">{label}</p>
     </div>
   );
 }
@@ -69,22 +70,21 @@ function StatPill({ label, value, color }: { label: string; value: string; color
 function WeekSummary({ weekAnalytics, currency }: { weekAnalytics: ReturnType<typeof calcWeekAnalytics>; currency: string }) {
   const { totalTrades, wins, winRate, totalPnl, avgPnl, bestSetup, mostCommonMistake, bestDay, worstDay } = weekAnalytics;
   const pnlColor = totalPnl > 0 ? "text-[#22c55e]" : totalPnl < 0 ? "text-[#ef4444]" : "text-[#94a3b8]";
-  const pnlStr = (totalPnl >= 0 ? "+" : "") + currency + Math.abs(totalPnl).toFixed(0);
   void wins; // used in winRate calculation upstream
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-2">
-        <StatPill label="PnL"      value={pnlStr}                                                                                    color={pnlColor} />
-        <StatPill label="Trades"   value={String(totalTrades)}                                                                       color="text-[#f8fafc]" />
-        <StatPill label="Win Rate" value={totalTrades > 0 ? `${Math.round(winRate)}%` : "—"}                                        color="text-[#3b82f6]" />
-        <StatPill label="Avg PnL"  value={totalTrades > 0 ? `${avgPnl >= 0 ? "+" : ""}${currency}${Math.abs(avgPnl).toFixed(0)}` : "—"} color={avgPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <StatPill label="PnL"      value={fmtMoneySigned(currency, totalPnl)}                                                color={pnlColor} />
+        <StatPill label="Trades"   value={String(totalTrades)}                                                                color="text-[#f8fafc]" />
+        <StatPill label="Win Rate" value={totalTrades > 0 ? `${Math.round(winRate)}%` : "—"}                                  color="text-[#3b82f6]" />
+        <StatPill label="Avg PnL"  value={totalTrades > 0 ? fmtMoneySigned(currency, avgPnl) : "—"}                           color={avgPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"} />
       </div>
 
       {(bestDay || worstDay || bestSetup || mostCommonMistake) && (
         <div className="grid grid-cols-2 gap-2">
-          {bestDay && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Best Day</p><p className="text-[13px] font-bold text-[#22c55e]">{bestDay.day} +{currency}{Math.abs(bestDay.pnl).toFixed(0)}</p></div>}
-          {worstDay && worstDay.date !== bestDay?.date && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Worst Day</p><p className="text-[13px] font-bold text-[#ef4444]">{worstDay.day} {worstDay.pnl >= 0 ? "+" : ""}{currency}{Math.abs(worstDay.pnl).toFixed(0)}</p></div>}
+          {bestDay && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Best Day</p><p className="text-[13px] font-bold text-[#22c55e] tabular">{bestDay.day} {fmtMoneySigned(currency, bestDay.pnl)}</p></div>}
+          {worstDay && worstDay.date !== bestDay?.date && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Worst Day</p><p className="text-[13px] font-bold text-[#ef4444] tabular">{worstDay.day} {fmtMoneySigned(currency, worstDay.pnl)}</p></div>}
           {bestSetup && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Best Setup</p><p className="text-[13px] font-bold text-[#f8fafc] truncate">{bestSetup}</p></div>}
           {mostCommonMistake && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Top Mistake</p><p className="text-[13px] font-bold text-[#f59e0b] truncate">{MISTAKE_LABELS[mostCommonMistake] ?? mostCommonMistake}</p></div>}
         </div>
@@ -94,31 +94,37 @@ function WeekSummary({ weekAnalytics, currency }: { weekAnalytics: ReturnType<ty
 }
 
 function HistoryCard({ review, portfolioName, onDelete }: { review: WeeklyReview; portfolioName: string; onDelete: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  const { label, color } = RATING_LABELS[review.rating] ?? { label: "", color: "" };
-  void label;
+  const weekEnd = review.weekEnd ?? (() => {
+    const d = new Date(review.weekStart + "T12:00:00");
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().slice(0, 10);
+  })();
 
   return (
-    <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] p-4 flex items-start justify-between gap-3 group" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[13px] font-semibold text-[#f8fafc]">{formatWeekRange(new Date(review.weekStart + "T12:00:00"), new Date(review.weekEnd + "T12:00:00"))}</span>
+    <div className="group rounded-xl border border-[#1e293b] bg-[#0e1223] p-4 transition-colors hover:border-[#334155]">
+      <div className="flex items-start justify-between gap-3 mb-2.5">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className="text-[13px] font-semibold text-[#f8fafc] truncate">{formatWeekRange(new Date(review.weekStart + "T12:00:00"), new Date(weekEnd + "T12:00:00"))}</span>
           {review.portfolioId && <span className="text-[10px] font-bold text-[#475569] uppercase tracking-[0.08em] border border-[#1e293b] rounded px-1.5 py-0.5">{portfolioName}</span>}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", review.followedPlan ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]")}>{review.followedPlan ? "Followed Plan" : "Deviated"}</span>
-          {review.repeatedMistake && review.repeatedMistake !== "none" && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">{MISTAKE_LABELS[review.repeatedMistake] ?? review.repeatedMistake}</span>}
-          <div className="flex items-center gap-0.5 ml-auto">
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map((s) => <Star key={s} className={cn("w-3 h-3", s <= review.rating ? "fill-[#f59e0b] text-[#f59e0b]" : "text-[#1e293b]")} />)}
           </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            aria-label="Delete review"
+            className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg text-[#475569] hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors cursor-pointer md:opacity-0 md:group-hover:opacity-100"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
-        {review.improvementNextWeek && <p className={cn("text-[12px] line-clamp-1", color)}>Goal: {review.improvementNextWeek}</p>}
       </div>
-      {hovered && (
-        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border border-[#ef4444]/30 text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors cursor-pointer">
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", review.followedPlan ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]")}>{review.followedPlan ? "Followed Plan" : "Deviated"}</span>
+        {review.repeatedMistake && review.repeatedMistake !== "none" && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">{MISTAKE_LABELS[review.repeatedMistake] ?? review.repeatedMistake}</span>}
+      </div>
+      {review.improvementNextWeek && <p className="text-[12px] text-[#94a3b8] line-clamp-2 mt-2">Goal: {review.improvementNextWeek}</p>}
     </div>
   );
 }
@@ -197,8 +203,8 @@ export default function WeeklyReviewPage() {
   }, [existingReview]);
 
   const currency = useMemo(() => {
-    if (portfolioId === "all") return "USDT";
-    return portfolios.find((p) => p.id === portfolioId)?.currency ?? "USDT";
+    if (portfolioId === "all") return "$";
+    return portfolios.find((p) => p.id === portfolioId)?.currency ?? "$";
   }, [portfolioId, portfolios]);
 
   const portfolioMap = useMemo(() => Object.fromEntries(portfolios.map((p) => [p.id, p.name])), [portfolios]);
@@ -235,8 +241,9 @@ export default function WeeklyReviewPage() {
         toast.success("Review saved");
       }
       setAllReviews(await getWeeklyReviews());
-    } catch {
-      toast.error("Failed to save review");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save review";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -247,8 +254,9 @@ export default function WeeklyReviewPage() {
       await deleteWeeklyReview(id);
       setAllReviews(await getWeeklyReviews());
       toast.success("Review deleted");
-    } catch {
-      toast.error("Failed to delete review");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete review";
+      toast.error(msg);
     }
   }
 
@@ -256,15 +264,24 @@ export default function WeeklyReviewPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex items-start justify-between">
+      <div className="space-y-3">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">Weekly Review</h1>
           <p className="text-[12px] text-[#475569] mt-1.5">{weekRange}</p>
         </div>
         {portfolios.length >= 2 && (
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1">
             {["all", ...portfolios.map((p) => p.id)].map((pid) => (
-              <button key={pid} onClick={() => setPortfolioId(pid)} className={cn("h-7 px-3 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer", portfolioId === pid ? "bg-[#f8fafc] text-[#020617] border-transparent" : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]")}>
+              <button
+                key={pid}
+                onClick={() => setPortfolioId(pid)}
+                className={cn(
+                  "h-7 px-3 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer shrink-0",
+                  portfolioId === pid
+                    ? "bg-[#f8fafc] text-[#020617] border-transparent"
+                    : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]"
+                )}
+              >
                 {pid === "all" ? "All" : portfolioMap[pid] ?? pid}
               </button>
             ))}

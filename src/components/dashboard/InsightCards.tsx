@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { DashboardAnalytics } from "@/lib/analytics";
 import { Portfolio } from "@/types";
 import { Trophy, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { fmtMoneySigned } from "@/lib/format";
 
 const MISTAKE_LABELS: Record<string, string> = {
   no_stop:       "No Stop Loss",
@@ -53,7 +54,7 @@ export function InsightCards({ analytics, currency }: Props) {
     cards.push({
       label: "Best Setup",
       title: bestSetup.tag,
-      subtitle: `${Math.round(bestSetup.winRate)}% WR · ${bestSetup.count} trades · ${bestSetup.totalPnl >= 0 ? "+" : ""}${currency}${Math.abs(bestSetup.totalPnl).toFixed(0)} PnL`,
+      subtitle: `${Math.round(bestSetup.winRate)}% WR · ${bestSetup.count} trades · ${fmtMoneySigned(currency, bestSetup.totalPnl)}`,
       icon: <Trophy className="w-4 h-4 text-[#f59e0b]" strokeWidth={2} />,
       accent: "text-[#f8fafc]",
       accentBg: "bg-[#f59e0b]/10",
@@ -66,7 +67,7 @@ export function InsightCards({ analytics, currency }: Props) {
     cards.push({
       label: "Watch Out",
       title: ws.tag,
-      subtitle: `${Math.round(ws.winRate)}% WR · ${ws.count} trades · ${ws.totalPnl >= 0 ? "+" : ""}${currency}${Math.abs(ws.totalPnl).toFixed(0)} PnL`,
+      subtitle: `${Math.round(ws.winRate)}% WR · ${ws.count} trades · ${fmtMoneySigned(currency, ws.totalPnl)}`,
       icon: <AlertTriangle className="w-4 h-4 text-[#ef4444]" strokeWidth={2} />,
       accent: "text-[#ef4444]",
       accentBg: "bg-[#ef4444]/10",
@@ -92,7 +93,7 @@ export function InsightCards({ analytics, currency }: Props) {
     cards.push({
       label: "Best Portfolio",
       title: best.portfolio.name,
-      subtitle: `${best.pnl >= 0 ? "+" : ""}${currency}${Math.abs(best.pnl).toFixed(0)} · ${Math.round(best.winRate)}% WR · ${best.trades} trades`,
+      subtitle: `${fmtMoneySigned(currency, best.pnl)} · ${Math.round(best.winRate)}% WR · ${best.trades} trades`,
       icon: <TrendingUp className="w-4 h-4 text-[#22c55e]" strokeWidth={2} />,
       accent: "text-[#22c55e]",
       accentBg: "bg-[#22c55e]/10",
@@ -103,7 +104,7 @@ export function InsightCards({ analytics, currency }: Props) {
       cards.push({
         label: "Needs Work",
         title: worst.portfolio.name,
-        subtitle: `${worst.pnl >= 0 ? "+" : ""}${currency}${Math.abs(worst.pnl).toFixed(0)} · ${Math.round(worst.winRate)}% WR · ${worst.trades} trades`,
+        subtitle: `${fmtMoneySigned(currency, worst.pnl)} · ${Math.round(worst.winRate)}% WR · ${worst.trades} trades`,
         icon: <TrendingDown className="w-4 h-4 text-[#ef4444]" strokeWidth={2} />,
         accent: "text-[#ef4444]",
         accentBg: "bg-[#ef4444]/10",

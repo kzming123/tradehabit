@@ -24,13 +24,13 @@ const EMPTY: FormData = {
   name: "",
   broker: "",
   startingBalance: "",
-  currency: "USDT",
+  currency: "USD",
   tradingStyle: "",
   goal: "",
   notes: "",
 };
 
-const CURRENCIES = ["USDT", "USDC", "USD", "EUR", "GBP", "BTC", "ETH", "BNB"];
+const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "USDT", "USDC", "BTC", "ETH"];
 
 const TRADING_STYLES: { value: TradingStyle; label: string }[] = [
   { value: "scalping", label: "Scalping" },

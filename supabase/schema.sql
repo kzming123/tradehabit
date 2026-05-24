@@ -127,3 +127,33 @@ create index if not exists trades_date_time_idx       on public.trades(date_time
 create index if not exists portfolios_user_id_idx     on public.portfolios(user_id);
 create index if not exists weekly_reviews_user_id_idx on public.weekly_reviews(user_id);
 create index if not exists weekly_reviews_week_idx    on public.weekly_reviews(week_start desc);
+
+-- ============================================================
+-- MIGRATION BLOCK
+-- Safe to re-run. Run this once if you applied an earlier version
+-- of this schema and now get "column does not exist" errors when
+-- saving a Weekly Review.
+-- ============================================================
+
+-- Add the two columns that were missing in the first cut of the schema
+alter table public.weekly_reviews add column if not exists week_end                date;
+alter table public.weekly_reviews add column if not exists repeated_mistake_notes  text;
+
+-- Replace the broken plain UNIQUE constraint with NULL-safe partial indexes.
+-- (PostgreSQL treats NULL as distinct in a plain UNIQUE, so it doesn't actually
+-- prevent duplicates for all-portfolio scope reviews.)
+alter table public.weekly_reviews
+  drop constraint if exists weekly_reviews_user_id_portfolio_id_week_start_key;
+
+create unique index if not exists weekly_reviews_all_scope_idx
+  on public.weekly_reviews(user_id, week_start)
+  where portfolio_id is null;
+
+create unique index if not exists weekly_reviews_portfolio_scope_idx
+  on public.weekly_reviews(user_id, portfolio_id, week_start)
+  where portfolio_id is not null;
+
+-- Backfill week_end for any rows missing it (weekStart + 6 days)
+update public.weekly_reviews
+   set week_end = (week_start::date + interval '6 days')::date
+ where week_end is null;

@@ -9,6 +9,8 @@ import { getPortfolioById, updatePortfolio, deletePortfolio } from "@/lib/db/por
 import { getTradesByPortfolio } from "@/lib/db/trades";
 import { PortfolioFormModal } from "@/components/portfolios/PortfolioFormModal";
 import { DeleteConfirmDialog } from "@/components/portfolios/DeleteConfirmDialog";
+import { PairDisplay } from "@/components/shared/PairDisplay";
+import { fmtMoney, fmtMoneySigned } from "@/lib/format";
 import { toast } from "sonner";
 
 const STYLE_LABELS: Record<string, string> = {
@@ -111,7 +113,7 @@ export default function PortfolioDetailPage() {
 
         <div>
           <p className="text-[11px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-1">Starting Balance</p>
-          <p className="text-[32px] font-bold tracking-[-0.03em] text-[#f8fafc] leading-none tabular">{portfolio.currency} {portfolio.startingBalance.toLocaleString()}</p>
+          <p className="text-[32px] font-bold tracking-[-0.03em] text-[#f8fafc] leading-none tabular">{fmtMoney(portfolio.currency, portfolio.startingBalance)}</p>
         </div>
 
         {(portfolio.goal || portfolio.notes) && (
@@ -143,7 +145,7 @@ export default function PortfolioDetailPage() {
         <StatCard label="Win Rate" value={winRate !== null ? `${winRate}%` : "—"} />
         <StatCard
           label="Total PnL"
-          value={hasPnl ? `${totalPnl >= 0 ? "+" : ""}${portfolio.currency} ${totalPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}
+          value={hasPnl ? fmtMoneySigned(portfolio.currency, totalPnl, 2) : "—"}
           accent={hasPnl ? (totalPnl >= 0 ? "green" : "red") : undefined}
         />
         <StatCard label="W / L" value={trades.length > 0 ? `${wins} / ${losses}` : "—"} />
@@ -172,12 +174,12 @@ export default function PortfolioDetailPage() {
                 <div key={trade.id} className="flex items-center gap-4 px-5 py-3.5 border-b border-[#0f172a] last:border-0 hover:bg-[#0f172a]/50 transition-colors">
                   <div className={`w-1 h-8 rounded-full shrink-0 ${isWin ? "bg-[#22c55e]" : isLoss ? "bg-[#ef4444]" : "bg-[#475569]"}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-[#f8fafc]">{trade.pair}</p>
+                    <PairDisplay pair={trade.pair} className="text-[13px] font-bold text-[#f8fafc]" />
                     <p className="text-[11px] text-[#475569]">{trade.direction === "long" ? "Long" : "Short"} · {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(trade.dateTime))}</p>
                   </div>
                   <div className="text-right">
                     <p className={`text-[13px] font-bold tabular ${isWin ? "text-[#22c55e]" : isLoss ? "text-[#ef4444]" : "text-[#475569]"}`}>
-                      {trade.pnl >= 0 ? "+" : ""}{portfolio.currency} {trade.pnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      {fmtMoneySigned(portfolio.currency, trade.pnl, 2)}
                     </p>
                     <p className="text-[11px] text-[#475569] tabular">{trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%</p>
                   </div>

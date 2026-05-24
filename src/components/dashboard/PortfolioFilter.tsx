@@ -24,8 +24,8 @@ export function PortfolioFilter({ portfolios, selected, onChange }: Props) {
         value={selected}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "h-8 pl-3 pr-7 rounded-lg border border-[#1e293b] bg-[#0f172a]",
-          "text-[12px] font-semibold text-[#94a3b8]",
+          "h-9 pl-3 pr-8 rounded-lg border border-[#1e293b] bg-[#0f172a]",
+          "text-[12px] font-semibold text-[#94a3b8] max-w-[160px] sm:max-w-none",
           "focus:outline-none focus:border-[#334155] transition-colors cursor-pointer appearance-none"
         )}
       >
@@ -36,7 +36,7 @@ export function PortfolioFilter({ portfolios, selected, onChange }: Props) {
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#475569] pointer-events-none" />
+      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#475569] pointer-events-none" />
     </div>
   );
 }

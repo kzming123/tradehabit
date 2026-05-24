@@ -126,7 +126,7 @@ export async function updateTrade(
   if (input.mistakes      !== undefined) patch.mistakes       = input.mistakes;
   if (input.notes         !== undefined) patch.notes          = input.notes         ?? null;
   if (input.lessonLearned !== undefined) patch.lesson_learned = input.lessonLearned ?? null;
-  if (input.screenshotUrl !== undefined) patch.screenshot_url = input.screenshotUrl ?? null;
+  if (input.screenshotUrl !== undefined) patch.screenshot_url = input.screenshotUrl || null;
 
   const { data, error } = await supabase
     .from("trades")
