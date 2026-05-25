@@ -14,9 +14,11 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { PortfolioFilter } from "@/components/dashboard/PortfolioFilter";
 import { InsightCards } from "@/components/dashboard/InsightCards";
 import { Skeleton, StatCardSkeleton, TradeRowSkeleton } from "@/components/shared/Skeleton";
+import { useT } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
 function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
+  const { t } = useT();
   return (
     <div className="flex flex-col items-center justify-center py-24 rounded-xl border border-[#1e293b] bg-[#0e1223] text-center">
       <div className="w-14 h-14 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center mb-5">
@@ -31,12 +33,10 @@ function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
         </svg>
       </div>
       <p className="text-[16px] font-bold text-[#f8fafc] mb-2">
-        {hasPortfolios ? "No trades yet" : "Welcome to TradeHabit"}
+        {hasPortfolios ? t("dashboard.noTradesTitle") : t("dashboard.welcome")}
       </p>
       <p className="text-[13px] text-[#475569] max-w-xs mb-8 leading-relaxed">
-        {hasPortfolios
-          ? "Log your first trade to start tracking performance and building discipline."
-          : "Create a portfolio to get started. Track every trade, build habits, improve fast."}
+        {hasPortfolios ? t("dashboard.noTradesDesc") : t("dashboard.noPortfoliosDesc")}
       </p>
       <div className="flex items-center gap-3 flex-wrap justify-center">
         {!hasPortfolios && (
@@ -45,7 +45,7 @@ function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
             className="flex items-center gap-2 h-9 px-4 rounded-lg border border-[#1e293b] text-[13px] font-semibold text-[#94a3b8] hover:border-[#334155] hover:text-[#f8fafc] transition-colors cursor-pointer"
           >
             <FolderOpen className="w-3.5 h-3.5" />
-            Create Portfolio
+            {t("dashboard.createPortfolio")}
           </Link>
         )}
         <Link
@@ -53,14 +53,14 @@ function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
           className="flex items-center gap-2 h-9 px-5 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-bold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Log First Trade
+          {t("dashboard.logFirstTrade")}
         </Link>
         <Link
           href="/weekly-review"
           className="flex items-center gap-2 h-9 px-4 rounded-lg border border-[#1e293b] text-[13px] font-semibold text-[#94a3b8] hover:border-[#334155] hover:text-[#f8fafc] transition-colors cursor-pointer"
         >
           <CalendarCheck className="w-3.5 h-3.5" />
-          Weekly Review
+          {t("nav.weeklyReview")}
         </Link>
       </div>
     </div>
@@ -68,6 +68,7 @@ function EmptyDashboard({ hasPortfolios }: { hasPortfolios: boolean }) {
 }
 
 export default function DashboardPage() {
+  const { t } = useT();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [trades,     setTrades]     = useState<Trade[]>([]);
   const [selected,   setSelected]   = useState<string>("all");
@@ -81,13 +82,13 @@ export default function DashboardPage() {
         setTrades(ts);
         if (ps.length === 1) setSelected(ps[0].id);
       } catch {
-        toast.error("Failed to load dashboard data");
+        toast.error(t("toast.dashboardLoadFailed"));
       } finally {
         setHydrated(true);
       }
     }
     load();
-  }, []);
+  }, [t]);
 
   const analytics = useMemo(
     () => buildAnalytics(trades, portfolios, selected),
@@ -107,10 +108,10 @@ export default function DashboardPage() {
   const subtitle = useMemo(() => {
     const now = new Date();
     const month = now.toLocaleString("en-US", { month: "long", year: "numeric" });
-    if (selected === "all") return `${month} · All Portfolios`;
+    if (selected === "all") return `${month} · ${t("dashboard.allPortfolios")}`;
     const name = portfolios.find((p) => p.id === selected)?.name ?? "";
     return `${month} · ${name}`;
-  }, [selected, portfolios]);
+  }, [selected, portfolios, t]);
 
   const hasPortfolios = portfolios.length > 0;
   const hasTrades = trades.filter(
@@ -147,7 +148,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
-            Overview
+            {t("dashboard.overview")}
           </h1>
           <p className="text-[12px] text-[#475569] mt-1.5">{subtitle}</p>
         </div>
@@ -165,7 +166,6 @@ export default function DashboardPage() {
         </>
       ) : (
         <>
-          {/* Hero chart leads the page */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_256px] gap-4">
             <PnlChart
               curve={analytics.pnlCurve}

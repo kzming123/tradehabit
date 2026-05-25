@@ -19,29 +19,24 @@ import {
   getQuickMode, setQuickMode as persistQuickMode,
 } from "@/lib/preferences";
 import { Portfolio, Trade } from "@/types";
+import { useT } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
 const MARKETS = ["Crypto", "Forex", "Stocks", "Indices", "Commodities", "Futures"];
 
-const EMOTIONS = [
-  { key: "calm",        label: "Calm",        color: "text-[#22c55e]", bg: "bg-[#22c55e]/10 border-[#22c55e]/30" },
-  { key: "confident",   label: "Confident",   color: "text-[#3b82f6]", bg: "bg-[#3b82f6]/10 border-[#3b82f6]/30" },
-  { key: "disciplined", label: "Disciplined", color: "text-[#22c55e]", bg: "bg-[#22c55e]/10 border-[#22c55e]/30" },
-  { key: "fomo",        label: "FOMO",        color: "text-[#f59e0b]", bg: "bg-[#f59e0b]/10 border-[#f59e0b]/30" },
-  { key: "greedy",      label: "Greedy",      color: "text-[#f59e0b]", bg: "bg-[#f59e0b]/10 border-[#f59e0b]/30" },
-  { key: "fearful",     label: "Fearful",     color: "text-[#ef4444]", bg: "bg-[#ef4444]/10 border-[#ef4444]/30" },
-  { key: "revenge",     label: "Revenge",     color: "text-[#ef4444]", bg: "bg-[#ef4444]/10 border-[#ef4444]/30" },
+const EMOTION_KEYS = [
+  { key: "calm",        color: "text-[#22c55e]", bg: "bg-[#22c55e]/10 border-[#22c55e]/30" },
+  { key: "confident",   color: "text-[#3b82f6]", bg: "bg-[#3b82f6]/10 border-[#3b82f6]/30" },
+  { key: "disciplined", color: "text-[#22c55e]", bg: "bg-[#22c55e]/10 border-[#22c55e]/30" },
+  { key: "fomo",        color: "text-[#f59e0b]", bg: "bg-[#f59e0b]/10 border-[#f59e0b]/30" },
+  { key: "greedy",      color: "text-[#f59e0b]", bg: "bg-[#f59e0b]/10 border-[#f59e0b]/30" },
+  { key: "fearful",     color: "text-[#ef4444]", bg: "bg-[#ef4444]/10 border-[#ef4444]/30" },
+  { key: "revenge",     color: "text-[#ef4444]", bg: "bg-[#ef4444]/10 border-[#ef4444]/30" },
 ];
 
-const MISTAKES = [
-  { key: "no_stop",       label: "No Stop Loss"  },
-  { key: "early_exit",    label: "Early Exit"    },
-  { key: "oversized",     label: "Oversized"     },
-  { key: "fomo_entry",    label: "FOMO Entry"    },
-  { key: "revenge_trade", label: "Revenge Trade" },
-  { key: "broke_rules",   label: "Broke Rules"   },
-  { key: "moved_sl",      label: "Moved SL"      },
-  { key: "overtraded",    label: "Overtraded"    },
+const MISTAKE_KEYS = [
+  "no_stop", "early_exit", "oversized", "fomo_entry",
+  "revenge_trade", "broke_rules", "moved_sl", "overtraded",
 ];
 
 function SectionCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
@@ -141,15 +136,13 @@ function tradeToForm(t: Trade): FormState {
   };
 }
 
-// ── Mode toggle ───────────────────────────────────────────────────────────────
-
-function ModeToggle({ quick, onToggle }: { quick: boolean; onToggle: (v: boolean) => void }) {
+function ModeToggle({ quick, onToggle, t }: { quick: boolean; onToggle: (v: boolean) => void; t: (k: string) => string }) {
   return (
     <div className="inline-flex items-center gap-1 bg-[#0e1223] border border-[#1e293b] rounded-lg p-0.5">
       {[
-        { v: false, label: "Detailed" },
-        { v: true,  label: "Quick" },
-      ].map(({ v, label }) => (
+        { v: false, labelKey: "addTrade.modeDetailed" },
+        { v: true,  labelKey: "addTrade.modeQuick" },
+      ].map(({ v, labelKey }) => (
         <button
           key={String(v)}
           type="button"
@@ -162,21 +155,20 @@ function ModeToggle({ quick, onToggle }: { quick: boolean; onToggle: (v: boolean
           )}
         >
           {v && <Zap className="w-3 h-3" />}
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </div>
   );
 }
 
-// ── Screenshot uploader with drag/drop ────────────────────────────────────────
-
 function ScreenshotUploader({
-  preview, onFile, onClear,
+  preview, onFile, onClear, t,
 }: {
   preview: string | null;
   onFile: (file: File) => void;
   onClear: () => void;
+  t: (k: string) => string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -184,11 +176,11 @@ function ScreenshotUploader({
   const handleSelect = (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+      toast.error(t("toast.screenshotNotImage"));
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
-      toast.error("Image must be smaller than 8 MB");
+      toast.error(t("toast.screenshotTooLarge"));
       return;
     }
     onFile(file);
@@ -198,7 +190,7 @@ function ScreenshotUploader({
     <div className="space-y-3">
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#8b5cf6]/10 border border-[#8b5cf6]/20">
         <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6] shrink-0" />
-        <p className="text-[12px] text-[#a78bfa]">AI auto-fill coming soon — drop a screenshot and we&apos;ll do the rest.</p>
+        <p className="text-[12px] text-[#a78bfa]">{t("addTrade.aiAutoFill")}</p>
       </div>
 
       {preview ? (
@@ -212,7 +204,7 @@ function ScreenshotUploader({
               className="h-7 px-2.5 rounded-lg bg-[#020617]/80 border border-[#1e293b] flex items-center gap-1 text-[11px] font-semibold text-[#94a3b8] hover:text-[#f8fafc] transition-colors cursor-pointer"
             >
               <ImagePlus className="w-3 h-3" />
-              Replace
+              {t("addTrade.replace")}
             </button>
             <button
               type="button"
@@ -243,9 +235,9 @@ function ScreenshotUploader({
         >
           <Upload className={cn("w-5 h-5 transition-colors", dragOver ? "text-[#22c55e]" : "text-[#334155] group-hover:text-[#475569]")} />
           <p className={cn("text-[12px] transition-colors font-medium", dragOver ? "text-[#22c55e]" : "text-[#475569] group-hover:text-[#94a3b8]")}>
-            {dragOver ? "Drop image here" : "Click or drag screenshot here"}
+            {dragOver ? t("addTrade.screenshotDropOver") : t("addTrade.screenshotDrop")}
           </p>
-          <p className="text-[10px] text-[#334155]">PNG · JPG · WEBP · up to 8 MB</p>
+          <p className="text-[10px] text-[#334155]">{t("addTrade.screenshotFormat")}</p>
         </button>
       )}
       <input
@@ -259,11 +251,10 @@ function ScreenshotUploader({
   );
 }
 
-// ── Inner form ────────────────────────────────────────────────────────────────
-
 function AddTradeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useT();
   const editId = searchParams.get("edit");
   const isEditing = !!editId;
 
@@ -278,9 +269,10 @@ function AddTradeForm() {
   const [recentEmotions, setRecentEmotions] = useState<string[]>([]);
   const [recentPairs, setRecentPairs] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
-  // Captured at load time — survives the user clearing the form so we can
-  // delete the old file from Storage on save.
   const originalScreenshotUrlRef = useRef<string | null>(null);
+
+  // Build translated emotion list
+  const EMOTIONS = EMOTION_KEYS.map((e) => ({ ...e, label: t(`emotions.${e.key}`) }));
 
   useEffect(() => {
     async function load() {
@@ -302,7 +294,6 @@ function AddTradeForm() {
           return;
         }
 
-        // New trade: try draft first, otherwise use last portfolio
         setQuick(getQuickMode());
         const draft = getTradeDraft<FormState>();
         if (draft && draft.portfolioId && all.some((p) => p.id === draft.portfolioId)) {
@@ -320,7 +311,6 @@ function AddTradeForm() {
     load();
   }, [editId]);
 
-  // Auto-calc PnL
   useEffect(() => {
     if (form.pnlManual) return;
     const entry = parseFloat(form.entryPrice);
@@ -331,16 +321,14 @@ function AddTradeForm() {
     setForm((f) => ({ ...f, pnl: String(pnl), pnlPercent: String(pnlPercent), outcome }));
   }, [form.entryPrice, form.exitPrice, form.positionSize, form.direction, form.pnlManual]);
 
-  // Auto-save draft (debounced, only for new trades)
   useEffect(() => {
     if (isEditing || !loaded) return;
-    const t = setTimeout(() => {
-      // Only save if there's any actual content
+    const timer = setTimeout(() => {
       if (form.pair || form.entryPrice || form.exitPrice || form.notes) {
         setTradeDraft(form);
       }
     }, 600);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [form, isEditing, loaded]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -372,31 +360,28 @@ function AddTradeForm() {
 
   function validate() {
     const e: Partial<Record<keyof FormState, string>> = {};
-    if (!form.portfolioId) e.portfolioId = "Select a portfolio";
-    if (!form.pair.trim()) e.pair = "Pair is required";
+    if (!form.portfolioId) e.portfolioId = t("addTrade.errPortfolio");
+    if (!form.pair.trim()) e.pair = t("addTrade.errPair");
     const entry = parseFloat(form.entryPrice);
     const exit = parseFloat(form.exitPrice);
     const size = parseFloat(form.positionSize);
-    if (!form.entryPrice || isNaN(entry) || entry <= 0) e.entryPrice = "Enter a valid entry price";
-    if (!form.exitPrice || isNaN(exit) || exit <= 0) e.exitPrice = "Enter a valid exit price";
-    if (!form.positionSize || isNaN(size) || size <= 0) e.positionSize = "Enter a valid position size";
-    if (!form.dateTime) e.dateTime = "Date & time is required";
+    if (!form.entryPrice || isNaN(entry) || entry <= 0) e.entryPrice = t("addTrade.errEntry");
+    if (!form.exitPrice || isNaN(exit) || exit <= 0) e.exitPrice = t("addTrade.errExit");
+    if (!form.positionSize || isNaN(size) || size <= 0) e.positionSize = t("addTrade.errSize");
+    if (!form.dateTime) e.dateTime = t("addTrade.errDateTime");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) { toast.error("Please fix the errors before saving"); return; }
+    if (!validate()) { toast.error(t("toast.fixErrors")); return; }
     setSaving(true);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      // The original Storage URL at load time — survives the user clearing
-      // the preview so we can both delete from Storage AND tell the DB to clear it.
       const originalUrl = originalScreenshotUrlRef.current;
-
       let screenshotUrl = "";
 
       if (screenshotFile) {
@@ -415,7 +400,6 @@ function AddTradeForm() {
       } else if (screenshotPreview && !screenshotPreview.startsWith("blob:")) {
         screenshotUrl = screenshotPreview;
       } else if (!screenshotPreview && originalUrl) {
-        // User cleared the screenshot — delete from Storage, leave URL empty so DB clears it too
         deleteScreenshot(originalUrl).catch(() => {});
         screenshotUrl = "";
       }
@@ -438,28 +422,25 @@ function AddTradeForm() {
         mistakes: form.mistakes,
         notes: form.notes.trim() || undefined,
         lessonLearned: form.lessonLearned.trim() || undefined,
-        // When editing, always send the value (even "") so a cleared screenshot reaches the DB.
-        // When creating, only send if non-empty.
         screenshotUrl: isEditing ? screenshotUrl : (screenshotUrl || undefined),
       };
 
       if (isEditing && editId) {
         await updateTrade(editId, payload);
-        toast.success("Trade updated");
+        toast.success(t("toast.tradeUpdated"));
         router.push(`/history/${editId}`);
       } else {
         const created = await createTrade(payload);
-        // Persist smart defaults
         setLastPortfolio(form.portfolioId);
         pushRecentPair(form.pair);
         if (form.emotionBefore) pushRecentEmotion(form.emotionBefore);
         if (form.emotionAfter) pushRecentEmotion(form.emotionAfter);
         clearTradeDraft();
-        toast.success("Trade logged");
+        toast.success(t("toast.tradeLogged"));
         router.push(`/history/${created.id}`);
       }
     } catch {
-      toast.error("Failed to save trade");
+      toast.error(t("toast.tradeSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -481,7 +462,6 @@ function AddTradeForm() {
   const selectedPortfolio = portfolios.find((p) => p.id === form.portfolioId);
   const currency = selectedPortfolio?.currency ?? "$";
 
-  // Order emotions so recent ones come first
   const orderedEmotions = (() => {
     if (recentEmotions.length === 0) return EMOTIONS;
     const recent = recentEmotions.map((k) => EMOTIONS.find((e) => e.key === k)).filter(Boolean) as typeof EMOTIONS;
@@ -500,30 +480,33 @@ function AddTradeForm() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
-              {isEditing ? "Edit Trade" : "Log a Trade"}
+              {isEditing ? t("addTrade.editTitle") : t("addTrade.logTitle")}
             </h1>
-            <p className="text-[12px] text-[#475569] mt-1.5">{isEditing ? "Update your trade details" : "Record your entry and reflection"}</p>
+            <p className="text-[12px] text-[#475569] mt-1.5">
+              {isEditing ? t("addTrade.editSubtitle") : t("addTrade.logSubtitle")}
+            </p>
           </div>
-          {!isEditing && <ModeToggle quick={quick} onToggle={handleQuickToggle} />}
+          {!isEditing && <ModeToggle quick={quick} onToggle={handleQuickToggle} t={t} />}
         </div>
 
         {draftRestored && !isEditing && (
           <div className="flex items-center justify-between rounded-lg border border-[#3b82f6]/30 bg-[#3b82f6]/5 px-3 py-2">
-            <p className="text-[12px] text-[#93c5fd]">Draft restored from your last session.</p>
+            <p className="text-[12px] text-[#93c5fd]">{t("addTrade.draftRestored")}</p>
             <button type="button" onClick={handleDiscardDraft} className="text-[11px] font-semibold text-[#475569] hover:text-[#f8fafc] transition-colors cursor-pointer">
-              Discard
+              {t("addTrade.discard")}
             </button>
           </div>
         )}
 
-        {/* Essentials — always visible */}
-        <SectionCard title="Trade">
+        <SectionCard title={t("addTrade.sectionTrade")}>
           <div className="space-y-4">
-            {/* Portfolio */}
             <div>
-              <FieldLabel required>Portfolio</FieldLabel>
+              <FieldLabel required>{t("addTrade.portfolio")}</FieldLabel>
               {portfolios.length === 0 ? (
-                <p className="text-[13px] text-[#475569]">No portfolios. <a href="/portfolios" className="text-[#f8fafc] underline">Create one first.</a></p>
+                <p className="text-[13px] text-[#475569]">
+                  {t("addTrade.noPortfolios")}{" "}
+                  <a href="/portfolios" className="text-[#f8fafc] underline">{t("addTrade.createFirst")}</a>
+                </p>
               ) : (
                 <select
                   value={form.portfolioId}
@@ -541,11 +524,11 @@ function AddTradeForm() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <FieldLabel required>Pair</FieldLabel>
+                <FieldLabel required>{t("addTrade.pair")}</FieldLabel>
                 <TextInput
                   value={form.pair}
                   onChange={(v) => set("pair", v.toUpperCase())}
-                  placeholder="e.g. BTC/USD"
+                  placeholder={t("addTrade.pairPlaceholder")}
                   hasError={!!errors.pair}
                   list={recentPairs.length > 0 ? "recent-pairs" : undefined}
                   autoCapitalize="characters"
@@ -558,7 +541,7 @@ function AddTradeForm() {
                 <FieldError msg={errors.pair} />
               </div>
               <div>
-                <FieldLabel>Market</FieldLabel>
+                <FieldLabel>{t("addTrade.market")}</FieldLabel>
                 <select
                   value={form.market}
                   onChange={(e) => set("market", e.target.value)}
@@ -571,7 +554,7 @@ function AddTradeForm() {
 
             {recentPairs.length > 0 && (
               <div className="-mt-1 flex items-center gap-2 overflow-x-auto pb-1 -mb-1">
-                <span className="text-[11px] text-[#475569] shrink-0">Recent</span>
+                <span className="text-[11px] text-[#475569] shrink-0">{t("addTrade.recent")}</span>
                 <div className="flex items-center gap-1.5">
                   {recentPairs.slice(0, 6).map((p) => {
                     const active = form.pair === p;
@@ -596,7 +579,7 @@ function AddTradeForm() {
             )}
 
             <div>
-              <FieldLabel>Direction</FieldLabel>
+              <FieldLabel>{t("addTrade.direction")}</FieldLabel>
               <div className="grid grid-cols-2 gap-2">
                 {(["long", "short"] as const).map((d) => (
                   <button
@@ -604,14 +587,14 @@ function AddTradeForm() {
                     type="button"
                     onClick={() => set("direction", d)}
                     className={cn(
-                      "h-11 rounded-lg border text-[13px] font-semibold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer capitalize",
+                      "h-11 rounded-lg border text-[13px] font-semibold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer",
                       form.direction === d
                         ? d === "long" ? "bg-[#22c55e]/10 border-[#22c55e]/40 text-[#22c55e]" : "bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]"
                         : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]"
                     )}
                   >
                     {d === "long" ? <ArrowUp className="w-4 h-4" strokeWidth={2.5} /> : <ArrowDown className="w-4 h-4" strokeWidth={2.5} />}
-                    {d}
+                    {t(`common.${d}`)}
                   </button>
                 ))}
               </div>
@@ -619,23 +602,22 @@ function AddTradeForm() {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <FieldLabel required>Entry</FieldLabel>
+                <FieldLabel required>{t("addTrade.entry")}</FieldLabel>
                 <TextInput value={form.entryPrice} onChange={(v) => set("entryPrice", v)} placeholder="0.00" inputMode="decimal" hasError={!!errors.entryPrice} />
                 <FieldError msg={errors.entryPrice} />
               </div>
               <div>
-                <FieldLabel required>Exit</FieldLabel>
+                <FieldLabel required>{t("addTrade.exit")}</FieldLabel>
                 <TextInput value={form.exitPrice} onChange={(v) => set("exitPrice", v)} placeholder="0.00" inputMode="decimal" hasError={!!errors.exitPrice} />
                 <FieldError msg={errors.exitPrice} />
               </div>
               <div>
-                <FieldLabel required>Size</FieldLabel>
+                <FieldLabel required>{t("addTrade.size")}</FieldLabel>
                 <TextInput value={form.positionSize} onChange={(v) => set("positionSize", v)} placeholder="0.00" inputMode="decimal" hasError={!!errors.positionSize} />
                 <FieldError msg={errors.positionSize} />
               </div>
             </div>
 
-            {/* PnL preview — auto-calculated, prominent */}
             {showPnlPreview && (
               <div className={cn(
                 "rounded-lg border px-4 py-3 flex items-center justify-between",
@@ -644,7 +626,7 @@ function AddTradeForm() {
                 : "border-[#1e293b] bg-[#0f172a]"
               )}>
                 <div>
-                  <p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Calculated PnL</p>
+                  <p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("addTrade.calculatedPnl")}</p>
                   <p className={cn(
                     "text-[20px] font-bold tabular leading-none tracking-tight",
                     pnlNum > 0 ? "text-[#22c55e]" : pnlNum < 0 ? "text-[#ef4444]" : "text-[#94a3b8]"
@@ -653,7 +635,7 @@ function AddTradeForm() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Return</p>
+                  <p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("addTrade.returnPct")}</p>
                   <p className={cn(
                     "text-[16px] font-bold tabular leading-none",
                     pnlNum > 0 ? "text-[#22c55e]" : pnlNum < 0 ? "text-[#ef4444]" : "text-[#94a3b8]"
@@ -667,30 +649,28 @@ function AddTradeForm() {
                     onClick={() => set("pnlManual", false)}
                     className="ml-2 text-[10px] font-semibold text-[#475569] hover:text-[#f8fafc] transition-colors cursor-pointer underline"
                   >
-                    Reset
+                    {t("addTrade.reset")}
                   </button>
                 )}
               </div>
             )}
 
-            {/* Manual PnL override (collapsed by default) */}
             {!quick && (
               <details className="group">
                 <summary className="text-[11px] font-semibold text-[#475569] hover:text-[#94a3b8] cursor-pointer select-none list-none flex items-center gap-1">
                   <span className="group-open:rotate-90 transition-transform inline-block">›</span>
-                  Override PnL manually
+                  {t("addTrade.overridePnl")}
                 </summary>
                 <div className="grid grid-cols-2 gap-3 mt-2.5">
-                  <TextInput value={form.pnl} onChange={(v) => { set("pnl", v); set("pnlManual", true); }} placeholder="PnL" inputMode="decimal" />
-                  <TextInput value={form.pnlPercent} onChange={(v) => { set("pnlPercent", v); set("pnlManual", true); }} placeholder="PnL %" inputMode="decimal" />
+                  <TextInput value={form.pnl} onChange={(v) => { set("pnl", v); set("pnlManual", true); }} placeholder={t("addTrade.pnlPlaceholder")} inputMode="decimal" />
+                  <TextInput value={form.pnlPercent} onChange={(v) => { set("pnlPercent", v); set("pnlManual", true); }} placeholder={t("addTrade.pnlPctPlaceholder")} inputMode="decimal" />
                 </div>
               </details>
             )}
 
-            {/* Date / outcome */}
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-end">
               <div>
-                <FieldLabel required>Date & Time</FieldLabel>
+                <FieldLabel required>{t("addTrade.dateTime")}</FieldLabel>
                 <input
                   type="datetime-local"
                   value={form.dateTime}
@@ -703,7 +683,7 @@ function AddTradeForm() {
                 <FieldError msg={errors.dateTime} />
               </div>
               <div>
-                <FieldLabel>Outcome</FieldLabel>
+                <FieldLabel>{t("addTrade.outcome")}</FieldLabel>
                 <div className="flex gap-1.5">
                   {(["win", "loss", "breakeven"] as const).map((o) => (
                     <button
@@ -711,7 +691,7 @@ function AddTradeForm() {
                       type="button"
                       onClick={() => set("outcome", o)}
                       className={cn(
-                        "h-11 px-3 rounded-lg border text-[12px] font-semibold capitalize transition-all duration-150 cursor-pointer",
+                        "h-11 px-3 rounded-lg border text-[12px] font-semibold transition-all duration-150 cursor-pointer",
                         form.outcome === o
                           ? o === "win" ? "bg-[#22c55e]/10 border-[#22c55e]/40 text-[#22c55e]"
                             : o === "loss" ? "bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]"
@@ -719,7 +699,7 @@ function AddTradeForm() {
                           : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
                       )}
                     >
-                      {o}
+                      {t(`common.${o}`)}
                     </button>
                   ))}
                 </div>
@@ -728,26 +708,26 @@ function AddTradeForm() {
           </div>
         </SectionCard>
 
-        {/* Optional sections — hidden in Quick mode */}
         {!quick && (
           <>
-            <SectionCard title="Screenshot">
+            <SectionCard title={t("addTrade.sectionScreenshot")}>
               <ScreenshotUploader
                 preview={screenshotPreview}
                 onFile={handleScreenshotFile}
                 onClear={handleScreenshotClear}
+                t={t}
               />
             </SectionCard>
 
-            <SectionCard title="Setup">
+            <SectionCard title={t("addTrade.sectionSetup")}>
               <SetupInput value={form.setupTag} onChange={(v) => set("setupTag", v)} />
             </SectionCard>
 
-            <SectionCard title="Psychology">
+            <SectionCard title={t("addTrade.sectionPsychology")}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(["emotionBefore", "emotionAfter"] as const).map((field) => (
                   <div key={field}>
-                    <FieldLabel>{field === "emotionBefore" ? "Emotion Before" : "Emotion After"}</FieldLabel>
+                    <FieldLabel>{field === "emotionBefore" ? t("addTrade.emotionBefore") : t("addTrade.emotionAfter")}</FieldLabel>
                     <div className="flex flex-wrap gap-1.5">
                       {orderedEmotions.map(({ key, label, color, bg }) => (
                         <button
@@ -770,9 +750,9 @@ function AddTradeForm() {
               </div>
             </SectionCard>
 
-            <SectionCard title="Mistakes">
+            <SectionCard title={t("addTrade.sectionMistakes")}>
               <div className="flex flex-wrap gap-2">
-                {MISTAKES.map(({ key, label }) => (
+                {MISTAKE_KEYS.map((key) => (
                   <button
                     key={key}
                     type="button"
@@ -784,31 +764,31 @@ function AddTradeForm() {
                         : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
                     )}
                   >
-                    {label}
+                    {t(`mistakes.${key}`)}
                   </button>
                 ))}
               </div>
             </SectionCard>
 
-            <SectionCard title="Reflection">
+            <SectionCard title={t("addTrade.sectionReflection")}>
               <div className="space-y-4">
                 <div>
-                  <FieldLabel>Trade Notes</FieldLabel>
+                  <FieldLabel>{t("addTrade.tradeNotes")}</FieldLabel>
                   <textarea
                     rows={3}
                     value={form.notes}
                     onChange={(e) => set("notes", e.target.value)}
-                    placeholder="What happened? How did you execute?"
+                    placeholder={t("addTrade.tradeNotesPlaceholder")}
                     className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[14px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors"
                   />
                 </div>
                 <div>
-                  <FieldLabel>Lesson Learned</FieldLabel>
+                  <FieldLabel>{t("addTrade.lessonLearned")}</FieldLabel>
                   <textarea
                     rows={2}
                     value={form.lessonLearned}
                     onChange={(e) => set("lessonLearned", e.target.value)}
-                    placeholder="What would you do differently?"
+                    placeholder={t("addTrade.lessonPlaceholder")}
                     className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[14px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors"
                   />
                 </div>
@@ -817,7 +797,6 @@ function AddTradeForm() {
           </>
         )}
 
-        {/* Sticky save bar on mobile, inline on desktop */}
         <div className="sticky bottom-20 md:bottom-0 md:static z-30 -mx-5 md:mx-0 px-5 md:px-0 py-3 md:py-0 bg-gradient-to-t from-[#020617] via-[#020617] to-transparent md:bg-none">
           <button
             type="submit"
@@ -825,7 +804,7 @@ function AddTradeForm() {
             className="w-full h-12 rounded-xl bg-[#f8fafc] text-[#020617] text-[14px] font-bold flex items-center justify-center gap-2 hover:bg-[#e2e8f0] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-black/20"
           >
             <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
-            {saving ? "Saving…" : isEditing ? "Update Trade" : "Log Trade"}
+            {saving ? t("common.saving") : isEditing ? t("addTrade.updateTrade") : t("addTrade.logTrade")}
           </button>
         </div>
       </div>

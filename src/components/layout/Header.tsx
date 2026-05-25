@@ -3,19 +3,28 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Settings } from "lucide-react";
+import { useT } from "@/i18n/LanguageProvider";
 
-const pageMeta: Record<string, { title: string; desc: string }> = {
-  "/": { title: "Dashboard", desc: "Trading overview" },
-  "/portfolios": { title: "Portfolios", desc: "Your accounts" },
-  "/add-trade": { title: "Add Trade", desc: "New journal entry" },
-  "/history": { title: "Trade History", desc: "All trades" },
-  "/weekly-review": { title: "Weekly Review", desc: "Reflect & improve" },
-  "/settings": { title: "Settings", desc: "Preferences" },
+interface PageMeta {
+  titleKey: string;
+  descKey: string;
+}
+
+const PAGE_META: Record<string, PageMeta> = {
+  "/":              { titleKey: "nav.dashboard",    descKey: "nav.tradingOverview" },
+  "/portfolios":    { titleKey: "nav.portfolios",   descKey: "nav.yourAccounts" },
+  "/add-trade":     { titleKey: "nav.addTrade",     descKey: "nav.newJournalEntry" },
+  "/history":       { titleKey: "nav.history",      descKey: "nav.allTrades" },
+  "/weekly-review": { titleKey: "nav.weeklyReview", descKey: "nav.reflectImprove" },
+  "/settings":      { titleKey: "nav.settings",     descKey: "nav.preferences" },
 };
 
 export function Header() {
   const pathname = usePathname();
-  const meta = pageMeta[pathname] ?? { title: "TradeHabit", desc: "" };
+  const { t } = useT();
+  const meta = PAGE_META[pathname];
+  const title = meta ? t(meta.titleKey) : "TradeHabit";
+  const desc = meta ? t(meta.descKey) : "";
 
   return (
     <header className="h-14 border-b border-[#1e293b] flex items-center px-6 gap-4 bg-[#020617]/90 backdrop-blur-md sticky top-0 z-40">
@@ -36,15 +45,16 @@ export function Header() {
 
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-[#f8fafc] leading-none tracking-tight">
-          {meta.title}
+          {title}
         </p>
-        <p className="text-[11px] text-[#475569] mt-0.5 leading-none">{meta.desc}</p>
+        <p className="text-[11px] text-[#475569] mt-0.5 leading-none">{desc}</p>
       </div>
 
       {/* Settings icon (mobile only — desktop uses sidebar) */}
       <Link
         href="/settings"
         className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[#64748b] hover:text-[#f8fafc] hover:bg-[#0f172a] transition-colors cursor-pointer"
+        aria-label={t("nav.settings")}
       >
         <Settings className="w-4 h-4" strokeWidth={1.75} />
       </Link>

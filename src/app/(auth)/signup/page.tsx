@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { useT } from "@/i18n/LanguageProvider";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useT();
   const [email,     setEmail]    = useState("");
   const [password,  setPassword] = useState("");
   const [showPw,    setShowPw]   = useState(false);
@@ -19,8 +21,8 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email.trim()) { setError("Email is required."); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (!email.trim()) { setError(t("auth.errorEmailRequired")); return; }
+    if (password.length < 6) { setError(t("auth.errorPasswordLength")); return; }
 
     setLoading(true);
     try {
@@ -66,7 +68,7 @@ export default function SignupPage() {
         </span>
         <div>
           <p className="text-[14px] font-bold tracking-tight text-[#f8fafc] leading-none">TradeHabit</p>
-          <p className="text-[11px] text-[#475569] mt-0.5 leading-none">Trading Journal</p>
+          <p className="text-[11px] text-[#475569] mt-0.5 leading-none">{t("nav.tradingJournal")}</p>
         </div>
       </div>
 
@@ -78,27 +80,27 @@ export default function SignupPage() {
               <CheckCircle2 className="w-6 h-6 text-[#22c55e]" />
             </div>
             <div>
-              <p className="text-[15px] font-bold text-[#f8fafc]">Check your email</p>
+              <p className="text-[15px] font-bold text-[#f8fafc]">{t("auth.checkEmail")}</p>
               <p className="text-[12px] text-[#475569] mt-1.5 leading-relaxed">
-                We sent a confirmation link to{" "}
-                <span className="text-[#f8fafc]">{email}</span>. Click it to activate your account.
+                {t("auth.confirmationSent")}{" "}
+                <span className="text-[#f8fafc]">{email}</span>{t("auth.clickToActivate")}
               </p>
             </div>
             <Link
               href="/login"
               className="inline-block text-[12px] text-[#475569] hover:text-[#f8fafc] transition-colors underline"
             >
-              Back to login
+              {t("auth.backToLogin")}
             </Link>
           </div>
         ) : (
           <>
             <div>
               <h1 className="text-[20px] font-bold text-[#f8fafc] tracking-tight leading-none">
-                Create your account
+                {t("auth.createAccount")}
               </h1>
               <p className="text-[13px] text-[#475569] mt-1.5">
-                Start tracking your trading journey
+                {t("auth.signupSubtitle")}
               </p>
             </div>
 
@@ -106,14 +108,14 @@ export default function SignupPage() {
               {/* Email */}
               <div>
                 <label className="block text-[12px] font-semibold text-[#475569] mb-1.5">
-                  Email
+                  {t("auth.email")}
                 </label>
                 <input
                   type="email"
                   autoComplete="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                  placeholder="you@example.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   className={cn(
                     "w-full h-10 rounded-lg border bg-[#0f172a] px-3 text-[13px] text-[#f8fafc] placeholder:text-[#334155]",
                     "focus:outline-none focus:ring-1 transition-colors",
@@ -127,7 +129,7 @@ export default function SignupPage() {
               {/* Password */}
               <div>
                 <label className="block text-[12px] font-semibold text-[#475569] mb-1.5">
-                  Password
+                  {t("auth.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -135,7 +137,7 @@ export default function SignupPage() {
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                    placeholder="Min. 6 characters"
+                    placeholder={t("auth.passwordPlaceholder")}
                     className={cn(
                       "w-full h-10 rounded-lg border bg-[#0f172a] px-3 pr-10 text-[13px] text-[#f8fafc] placeholder:text-[#334155]",
                       "focus:outline-none focus:ring-1 transition-colors",
@@ -168,18 +170,18 @@ export default function SignupPage() {
                 disabled={loading}
                 className="w-full h-10 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-bold hover:bg-[#e2e8f0] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1"
               >
-                {loading ? "Creating account…" : "Create account"}
+                {loading ? t("auth.creatingAccount") : t("auth.signUp")}
               </button>
             </form>
 
             <div className="pt-1 border-t border-[#0f172a] text-center">
               <p className="text-[12px] text-[#475569]">
-                Already have an account?{" "}
+                {t("auth.hasAccount")}{" "}
                 <Link
                   href="/login"
                   className="text-[#f8fafc] font-semibold hover:underline transition-colors"
                 >
-                  Sign in
+                  {t("auth.signIn")}
                 </Link>
               </p>
             </div>

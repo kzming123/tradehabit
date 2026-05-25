@@ -14,13 +14,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/i18n/LanguageProvider";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/portfolios", label: "Portfolios", icon: Briefcase },
-  { href: "/add-trade", label: "Add Trade", icon: PlusCircle },
-  { href: "/history", label: "Trade History", icon: ClipboardList },
-  { href: "/weekly-review", label: "Weekly Review", icon: CalendarCheck },
+  { href: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/portfolios", labelKey: "nav.portfolios", icon: Briefcase },
+  { href: "/add-trade", labelKey: "nav.addTrade", icon: PlusCircle },
+  { href: "/history", labelKey: "nav.history", icon: ClipboardList },
+  { href: "/weekly-review", labelKey: "nav.weeklyReview", icon: CalendarCheck },
 ];
 
 function NavItem({
@@ -59,6 +60,7 @@ function NavItem({
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useT();
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,17 +100,17 @@ export function Sidebar() {
         </div>
         <div>
           <p className="text-[13px] font-bold tracking-tight text-[#f8fafc]">TradeHabit</p>
-          <p className="text-[10px] text-[#475569] leading-none mt-0.5">Trading Journal</p>
+          <p className="text-[10px] text-[#475569] leading-none mt-0.5">{t("nav.tradingJournal")}</p>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon }) => (
+        {navItems.map(({ href, labelKey, icon }) => (
           <NavItem
             key={href}
             href={href}
-            label={label}
+            label={t(labelKey)}
             icon={icon}
             active={pathname === href}
           />
@@ -119,7 +121,7 @@ export function Sidebar() {
       <div className="px-2 pb-3 pt-2 border-t border-[#1e293b] space-y-0.5">
         <NavItem
           href="/settings"
-          label="Settings"
+          label={t("nav.settings")}
           icon={Settings}
           active={pathname === "/settings"}
         />

@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useT } from "@/i18n/LanguageProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useT();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPw,   setShowPw]   = useState(false);
@@ -19,7 +21,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     if (!email.trim() || !password) {
-      setError("Please enter your email and password.");
+      setError(t("auth.errorEnterCredentials"));
       return;
     }
     setLoading(true);
@@ -60,7 +62,7 @@ export default function LoginPage() {
         </span>
         <div>
           <p className="text-[14px] font-bold tracking-tight text-[#f8fafc] leading-none">TradeHabit</p>
-          <p className="text-[11px] text-[#475569] mt-0.5 leading-none">Trading Journal</p>
+          <p className="text-[11px] text-[#475569] mt-0.5 leading-none">{t("nav.tradingJournal")}</p>
         </div>
       </div>
 
@@ -68,10 +70,10 @@ export default function LoginPage() {
       <div className="rounded-2xl border border-[#1e293b] bg-[#0e1223] p-6 space-y-5">
         <div>
           <h1 className="text-[20px] font-bold text-[#f8fafc] tracking-tight leading-none">
-            Welcome back
+            {t("auth.welcomeBack")}
           </h1>
           <p className="text-[13px] text-[#475569] mt-1.5">
-            Sign in to your trading journal
+            {t("auth.signInSubtitle")}
           </p>
         </div>
 
@@ -79,14 +81,14 @@ export default function LoginPage() {
           {/* Email */}
           <div>
             <label className="block text-[12px] font-semibold text-[#475569] mb-1.5">
-              Email
+              {t("auth.email")}
             </label>
             <input
               type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(null); }}
-              placeholder="you@example.com"
+              placeholder={t("auth.emailPlaceholder")}
               className={cn(
                 "w-full h-10 rounded-lg border bg-[#0f172a] px-3 text-[13px] text-[#f8fafc] placeholder:text-[#334155]",
                 "focus:outline-none focus:ring-1 transition-colors",
@@ -100,7 +102,7 @@ export default function LoginPage() {
           {/* Password */}
           <div>
             <label className="block text-[12px] font-semibold text-[#475569] mb-1.5">
-              Password
+              {t("auth.password")}
             </label>
             <div className="relative">
               <input
@@ -141,18 +143,18 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full h-10 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-bold hover:bg-[#e2e8f0] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("auth.signingIn") : t("auth.signIn")}
           </button>
         </form>
 
         <div className="pt-1 border-t border-[#0f172a] text-center">
           <p className="text-[12px] text-[#475569]">
-            Don&apos;t have an account?{" "}
+            {t("auth.noAccount")}{" "}
             <Link
               href="/signup"
               className="text-[#f8fafc] font-semibold hover:underline transition-colors"
             >
-              Create one
+              {t("auth.createOne")}
             </Link>
           </p>
         </div>

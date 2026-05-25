@@ -11,16 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { fmtMoney } from "@/lib/format";
 import Link from "next/link";
-
-const STYLE_LABELS: Record<string, string> = {
-  scalping: "Scalping",
-  day_trading: "Day Trading",
-  swing: "Swing",
-  position: "Position",
-  crypto_spot: "Crypto Spot",
-  prop_firm: "Prop Firm",
-  other: "Other",
-};
+import { useT } from "@/i18n/LanguageProvider";
 
 interface Props {
   portfolio: Portfolio;
@@ -30,6 +21,7 @@ interface Props {
 }
 
 export function PortfolioCard({ portfolio, tradeCount, onEdit, onDelete }: Props) {
+  const { t } = useT();
   const { id, name, broker, startingBalance, currency, tradingStyle, createdAt } = portfolio;
 
   return (
@@ -71,15 +63,15 @@ export function PortfolioCard({ portfolio, tradeCount, onEdit, onDelete }: Props
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mt-4">
           <div>
-            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">PnL</p>
+            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">{t("portfolioDetail.totalPnl")}</p>
             <p className="text-[13px] font-bold text-[#475569] tabular">—</p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">Win Rate</p>
+            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">{t("portfolioDetail.winRate")}</p>
             <p className="text-[13px] font-bold text-[#475569] tabular">—</p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">Trades</p>
+            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-0.5">{t("portfolioDetail.totalTrades")}</p>
             <p className="text-[13px] font-bold text-[#f8fafc] tabular">{tradeCount}</p>
           </div>
         </div>
@@ -89,7 +81,7 @@ export function PortfolioCard({ portfolio, tradeCount, onEdit, onDelete }: Props
       <div className="flex items-center justify-between px-5 py-3 border-t border-[#0f172a]">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-semibold text-[#334155] bg-[#0f172a] px-2 py-0.5 rounded-md border border-[#1e293b]">
-            {STYLE_LABELS[tradingStyle] ?? tradingStyle}
+            {t(`tradingStyles.${tradingStyle}`) || tradingStyle}
           </span>
           <span className="text-[10px] text-[#334155]">
             {new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(
@@ -118,13 +110,13 @@ export function PortfolioCard({ portfolio, tradeCount, onEdit, onDelete }: Props
                 onClick={onEdit}
                 className="text-[13px] text-[#94a3b8] hover:text-[#f8fafc] cursor-pointer gap-2"
               >
-                <Pencil className="w-3.5 h-3.5" /> Edit
+                <Pencil className="w-3.5 h-3.5" /> {t("common.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
                 className="text-[13px] text-[#ef4444] hover:text-[#ef4444] focus:text-[#ef4444] cursor-pointer gap-2"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Delete
+                <Trash2 className="w-3.5 h-3.5" /> {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

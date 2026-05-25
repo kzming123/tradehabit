@@ -1,19 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { DashboardAnalytics } from "@/lib/analytics";
-import { Portfolio } from "@/types";
 import { Trophy, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { fmtMoneySigned } from "@/lib/format";
-
-const MISTAKE_LABELS: Record<string, string> = {
-  no_stop:       "No Stop Loss",
-  early_exit:    "Early Exit",
-  oversized:     "Oversized",
-  fomo_entry:    "FOMO Entry",
-  revenge_trade: "Revenge Trade",
-  broke_rules:   "Broke Rules",
-  moved_sl:      "Moved SL",
-  overtraded:    "Overtraded",
-};
+import { useT } from "@/i18n/LanguageProvider";
 
 interface InsightCardProps {
   icon: React.ReactNode;
@@ -45,14 +36,14 @@ interface Props {
 }
 
 export function InsightCards({ analytics, currency }: Props) {
+  const { t, tf } = useT();
   const { bestSetup, mostCommonMistake, mostCommonMistakeCount, portfolioStats } = analytics;
 
   const cards: InsightCardProps[] = [];
 
-  // Best Setup
   if (bestSetup) {
     cards.push({
-      label: "Best Setup",
+      label: t("insights.bestSetup"),
       title: bestSetup.tag,
       subtitle: `${Math.round(bestSetup.winRate)}% WR · ${bestSetup.count} trades · ${fmtMoneySigned(currency, bestSetup.totalPnl)}`,
       icon: <Trophy className="w-4 h-4 text-[#f59e0b]" strokeWidth={2} />,
@@ -61,11 +52,10 @@ export function InsightCards({ analytics, currency }: Props) {
     });
   }
 
-  // Worst Setup (only if different from best)
   if (analytics.worstSetup && analytics.worstSetup.tag !== bestSetup?.tag) {
     const ws = analytics.worstSetup;
     cards.push({
-      label: "Watch Out",
+      label: t("insights.watchOut"),
       title: ws.tag,
       subtitle: `${Math.round(ws.winRate)}% WR · ${ws.count} trades · ${fmtMoneySigned(currency, ws.totalPnl)}`,
       icon: <AlertTriangle className="w-4 h-4 text-[#ef4444]" strokeWidth={2} />,
@@ -74,24 +64,22 @@ export function InsightCards({ analytics, currency }: Props) {
     });
   }
 
-  // Most Common Mistake
   if (mostCommonMistake) {
     cards.push({
-      label: "Top Mistake",
-      title: MISTAKE_LABELS[mostCommonMistake] ?? mostCommonMistake,
-      subtitle: `Occurred ${mostCommonMistakeCount}x — work on fixing this`,
+      label: t("insights.topMistake"),
+      title: t(`mistakes.${mostCommonMistake}`),
+      subtitle: tf("insights.occurrences", { n: mostCommonMistakeCount }),
       icon: <AlertTriangle className="w-4 h-4 text-[#f59e0b]" strokeWidth={2} />,
       accent: "text-[#f8fafc]",
       accentBg: "bg-[#f59e0b]/10",
     });
   }
 
-  // Best portfolio (only when multiple exist)
   const sortedPortfolios = [...portfolioStats].sort((a, b) => b.pnl - a.pnl);
   if (sortedPortfolios.length > 1) {
     const best = sortedPortfolios[0];
     cards.push({
-      label: "Best Portfolio",
+      label: t("insights.bestPortfolio"),
       title: best.portfolio.name,
       subtitle: `${fmtMoneySigned(currency, best.pnl)} · ${Math.round(best.winRate)}% WR · ${best.trades} trades`,
       icon: <TrendingUp className="w-4 h-4 text-[#22c55e]" strokeWidth={2} />,
@@ -102,7 +90,7 @@ export function InsightCards({ analytics, currency }: Props) {
     const worst = sortedPortfolios[sortedPortfolios.length - 1];
     if (worst.portfolio.id !== best.portfolio.id) {
       cards.push({
-        label: "Needs Work",
+        label: t("insights.needsWork"),
         title: worst.portfolio.name,
         subtitle: `${fmtMoneySigned(currency, worst.pnl)} · ${Math.round(worst.winRate)}% WR · ${worst.trades} trades`,
         icon: <TrendingDown className="w-4 h-4 text-[#ef4444]" strokeWidth={2} />,

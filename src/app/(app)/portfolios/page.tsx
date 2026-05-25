@@ -14,8 +14,10 @@ import { PortfolioCard } from "@/components/portfolios/PortfolioCard";
 import { PortfolioFormModal } from "@/components/portfolios/PortfolioFormModal";
 import { DeleteConfirmDialog } from "@/components/portfolios/DeleteConfirmDialog";
 import { toast } from "sonner";
+import { useT } from "@/i18n/LanguageProvider";
 
 export default function PortfoliosPage() {
+  const { t, tf } = useT();
   const [portfolios,  setPortfolios]  = useState<Portfolio[]>([]);
   const [tradeCounts, setTradeCounts] = useState<Record<string, number>>({});
   const [loading,     setLoading]     = useState(true);
@@ -34,7 +36,7 @@ export default function PortfoliosPage() {
       setPortfolios(all);
       setTradeCounts(counts);
     } catch {
-      toast.error("Failed to load portfolios");
+      toast.error(t("toast.portfoliosLoadFailed"));
     } finally {
       setLoading(false);
     }
@@ -54,15 +56,15 @@ export default function PortfoliosPage() {
     try {
       if (editTarget) {
         await updatePortfolio(editTarget.id, data);
-        toast.success("Portfolio updated");
+        toast.success(t("toast.portfolioUpdated"));
       } else {
         await createPortfolio(data);
-        toast.success("Portfolio created");
+        toast.success(t("toast.portfolioCreated"));
       }
       setModalOpen(false);
       reload();
     } catch {
-      toast.error("Failed to save portfolio");
+      toast.error(t("toast.portfolioSaveFailed"));
     }
   }
 
@@ -70,15 +72,17 @@ export default function PortfoliosPage() {
     if (!deleteTarget) return;
     try {
       await deletePortfolio(deleteTarget.id);
-      toast.success(`"${deleteTarget.name}" deleted`);
+      toast.success(`"${deleteTarget.name}" ${t("common.deleted")}`);
       setDeleteTarget(null);
       reload();
     } catch {
-      toast.error("Failed to delete portfolio");
+      toast.error(t("toast.portfolioDeleteFailed"));
     }
   }
 
-  const label = portfolios.length === 1 ? "1 account" : `${portfolios.length} accounts`;
+  const label = portfolios.length === 1
+    ? t("portfolios.account_one")
+    : tf("portfolios.account_other", { n: portfolios.length });
 
   if (loading) return null;
 
@@ -87,7 +91,7 @@ export default function PortfoliosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
-            Portfolios
+            {t("nav.portfolios")}
           </h1>
           <p className="text-[12px] text-[#475569] mt-1.5">{label}</p>
         </div>
@@ -96,7 +100,7 @@ export default function PortfoliosPage() {
           className="flex items-center gap-2 h-8 px-3 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-          New Portfolio
+          {t("portfolios.newPortfolio")}
         </button>
       </div>
 
@@ -113,16 +117,16 @@ export default function PortfoliosPage() {
               />
             </svg>
           </div>
-          <p className="text-[14px] font-semibold text-[#f8fafc] mb-2">No portfolios yet</p>
+          <p className="text-[14px] font-semibold text-[#f8fafc] mb-2">{t("portfolios.noPortfoliosTitle")}</p>
           <p className="text-[12px] text-[#475569] max-w-xs mb-6 leading-relaxed">
-            Create your first portfolio to start journaling trades.
+            {t("portfolios.noPortfoliosDesc")}
           </p>
           <button
             onClick={openCreate}
             className="flex items-center gap-2 h-8 px-4 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-            Create Portfolio
+            {t("portfolios.createPortfolio")}
           </button>
         </div>
       ) : (

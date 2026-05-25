@@ -17,27 +17,19 @@ import {
 import { fmtMoneySigned } from "@/lib/format";
 import { Portfolio, WeeklyReview } from "@/types";
 import { toast } from "sonner";
+import { useT } from "@/i18n/LanguageProvider";
 
-const MISTAKE_OPTIONS = [
-  { key: "no_stop",       label: "No Stop Loss" },
-  { key: "early_exit",    label: "Early Exit"   },
-  { key: "oversized",     label: "Oversized"    },
-  { key: "fomo_entry",    label: "FOMO Entry"   },
-  { key: "revenge_trade", label: "Revenge Trade"},
-  { key: "broke_rules",   label: "Broke Rules"  },
-  { key: "moved_sl",      label: "Moved SL"     },
-  { key: "overtraded",    label: "Overtraded"   },
-  { key: "none",          label: "None this week"},
-];
+const MISTAKE_KEYS = [
+  "no_stop", "early_exit", "oversized", "fomo_entry",
+  "revenge_trade", "broke_rules", "moved_sl", "overtraded", "none",
+] as const;
 
-const MISTAKE_LABELS = Object.fromEntries(MISTAKE_OPTIONS.map(({ key, label }) => [key, label]));
-
-const RATING_LABELS: Record<number, { label: string; color: string }> = {
-  1: { label: "Terrible week",  color: "text-[#ef4444]" },
-  2: { label: "Below average",  color: "text-[#f59e0b]" },
-  3: { label: "Average",        color: "text-[#94a3b8]" },
-  4: { label: "Good week",      color: "text-[#3b82f6]" },
-  5: { label: "Excellent!",     color: "text-[#22c55e]" },
+const RATING_COLORS: Record<number, string> = {
+  1: "text-[#ef4444]",
+  2: "text-[#f59e0b]",
+  3: "text-[#94a3b8]",
+  4: "text-[#3b82f6]",
+  5: "text-[#22c55e]",
 };
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
@@ -67,7 +59,7 @@ function StatPill({ label, value, color }: { label: string; value: string; color
   );
 }
 
-function WeekSummary({ weekAnalytics, currency }: { weekAnalytics: ReturnType<typeof calcWeekAnalytics>; currency: string }) {
+function WeekSummary({ weekAnalytics, currency, t }: { weekAnalytics: ReturnType<typeof calcWeekAnalytics>; currency: string; t: (key: string) => string }) {
   const { totalTrades, wins, winRate, totalPnl, avgPnl, bestSetup, mostCommonMistake, bestDay, worstDay } = weekAnalytics;
   const pnlColor = totalPnl > 0 ? "text-[#22c55e]" : totalPnl < 0 ? "text-[#ef4444]" : "text-[#94a3b8]";
   void wins; // used in winRate calculation upstream
@@ -75,25 +67,25 @@ function WeekSummary({ weekAnalytics, currency }: { weekAnalytics: ReturnType<ty
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatPill label="PnL"      value={fmtMoneySigned(currency, totalPnl)}                                                color={pnlColor} />
-        <StatPill label="Trades"   value={String(totalTrades)}                                                                color="text-[#f8fafc]" />
-        <StatPill label="Win Rate" value={totalTrades > 0 ? `${Math.round(winRate)}%` : "—"}                                  color="text-[#3b82f6]" />
-        <StatPill label="Avg PnL"  value={totalTrades > 0 ? fmtMoneySigned(currency, avgPnl) : "—"}                           color={avgPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"} />
+        <StatPill label={t("statsRow.totalPnl")} value={fmtMoneySigned(currency, totalPnl)}                                   color={pnlColor} />
+        <StatPill label={t("statsRow.trades")}   value={String(totalTrades)}                                                  color="text-[#f8fafc]" />
+        <StatPill label={t("statsRow.winRate")}  value={totalTrades > 0 ? `${Math.round(winRate)}%` : "—"}                   color="text-[#3b82f6]" />
+        <StatPill label="Avg PnL"                value={totalTrades > 0 ? fmtMoneySigned(currency, avgPnl) : "—"}            color={avgPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"} />
       </div>
 
       {(bestDay || worstDay || bestSetup || mostCommonMistake) && (
         <div className="grid grid-cols-2 gap-2">
-          {bestDay && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Best Day</p><p className="text-[13px] font-bold text-[#22c55e] tabular">{bestDay.day} {fmtMoneySigned(currency, bestDay.pnl)}</p></div>}
-          {worstDay && worstDay.date !== bestDay?.date && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Worst Day</p><p className="text-[13px] font-bold text-[#ef4444] tabular">{worstDay.day} {fmtMoneySigned(currency, worstDay.pnl)}</p></div>}
-          {bestSetup && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Best Setup</p><p className="text-[13px] font-bold text-[#f8fafc] truncate">{bestSetup}</p></div>}
-          {mostCommonMistake && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">Top Mistake</p><p className="text-[13px] font-bold text-[#f59e0b] truncate">{MISTAKE_LABELS[mostCommonMistake] ?? mostCommonMistake}</p></div>}
+          {bestDay && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("weeklyReview.bestDay")}</p><p className="text-[13px] font-bold text-[#22c55e] tabular">{bestDay.day} {fmtMoneySigned(currency, bestDay.pnl)}</p></div>}
+          {worstDay && worstDay.date !== bestDay?.date && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("weeklyReview.worstDay")}</p><p className="text-[13px] font-bold text-[#ef4444] tabular">{worstDay.day} {fmtMoneySigned(currency, worstDay.pnl)}</p></div>}
+          {bestSetup && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("weeklyReview.bestSetup")}</p><p className="text-[13px] font-bold text-[#f8fafc] truncate">{bestSetup}</p></div>}
+          {mostCommonMistake && <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3"><p className="text-[10px] font-bold text-[#334155] uppercase tracking-[0.08em] mb-1">{t("weeklyReview.topMistake")}</p><p className="text-[13px] font-bold text-[#f59e0b] truncate">{t(`mistakes.${mostCommonMistake}`) || mostCommonMistake}</p></div>}
         </div>
       )}
     </div>
   );
 }
 
-function HistoryCard({ review, portfolioName, onDelete }: { review: WeeklyReview; portfolioName: string; onDelete: () => void }) {
+function HistoryCard({ review, portfolioName, onDelete, t }: { review: WeeklyReview; portfolioName: string; onDelete: () => void; t: (key: string) => string }) {
   const weekEnd = review.weekEnd ?? (() => {
     const d = new Date(review.weekStart + "T12:00:00");
     d.setDate(d.getDate() + 6);
@@ -121,10 +113,10 @@ function HistoryCard({ review, portfolioName, onDelete }: { review: WeeklyReview
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", review.followedPlan ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]")}>{review.followedPlan ? "Followed Plan" : "Deviated"}</span>
-        {review.repeatedMistake && review.repeatedMistake !== "none" && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">{MISTAKE_LABELS[review.repeatedMistake] ?? review.repeatedMistake}</span>}
+        <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full", review.followedPlan ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]")}>{review.followedPlan ? t("weeklyReview.followedPlan") : t("weeklyReview.deviated")}</span>
+        {review.repeatedMistake && review.repeatedMistake !== "none" && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">{t(`mistakes.${review.repeatedMistake}`) || review.repeatedMistake}</span>}
       </div>
-      {review.improvementNextWeek && <p className="text-[12px] text-[#94a3b8] line-clamp-2 mt-2">Goal: {review.improvementNextWeek}</p>}
+      {review.improvementNextWeek && <p className="text-[12px] text-[#94a3b8] line-clamp-2 mt-2">{t("weeklyReview.goalLabel")}: {review.improvementNextWeek}</p>}
     </div>
   );
 }
@@ -146,6 +138,7 @@ function reviewToForm(r: WeeklyReview): FormState {
 }
 
 export default function WeeklyReviewPage() {
+  const { t, tf } = useT();
   const [hydrated,    setHydrated]    = useState(false);
   const [portfolios,  setPortfolios]  = useState<Portfolio[]>([]);
   const [allTrades,   setAllTrades]   = useState<ReturnType<typeof getTrades> extends Promise<infer T> ? T : never>([]);
@@ -165,7 +158,7 @@ export default function WeeklyReviewPage() {
         setAllReviews(rs);
         if (ps.length === 1) setPortfolioId(ps[0].id);
       } catch {
-        toast.error("Failed to load data");
+        toast.error(t("toast.reviewLoadFailed"));
       } finally {
         setHydrated(true);
       }
@@ -216,8 +209,8 @@ export default function WeeklyReviewPage() {
   }
 
   async function handleSave() {
-    if (form.followedPlan === null) { toast.error("Please answer the plan question"); return; }
-    if (form.rating === 0)          { toast.error("Please rate your week"); return; }
+    if (form.followedPlan === null) { toast.error(t("toast.planRequired")); return; }
+    if (form.rating === 0)          { toast.error(t("toast.ratingRequired")); return; }
     setSaving(true);
     try {
       const data = {
@@ -235,10 +228,10 @@ export default function WeeklyReviewPage() {
 
       if (existingReview) {
         await updateWeeklyReview(existingReview.id, data);
-        toast.success("Review updated");
+        toast.success(t("toast.reviewUpdated"));
       } else {
         await createWeeklyReview(data);
-        toast.success("Review saved");
+        toast.success(t("toast.reviewSaved"));
       }
       setAllReviews(await getWeeklyReviews());
     } catch (err) {
@@ -253,9 +246,9 @@ export default function WeeklyReviewPage() {
     try {
       await deleteWeeklyReview(id);
       setAllReviews(await getWeeklyReviews());
-      toast.success("Review deleted");
+      toast.success(t("toast.reviewDeleted"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete review";
+      const msg = err instanceof Error ? err.message : t("toast.reviewLoadFailed");
       toast.error(msg);
     }
   }
@@ -266,7 +259,7 @@ export default function WeeklyReviewPage() {
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="space-y-3">
         <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">Weekly Review</h1>
+          <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">{t("nav.weeklyReview")}</h1>
           <p className="text-[12px] text-[#475569] mt-1.5">{weekRange}</p>
         </div>
         {portfolios.length >= 2 && (
@@ -282,7 +275,7 @@ export default function WeeklyReviewPage() {
                     : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]"
                 )}
               >
-                {pid === "all" ? "All" : portfolioMap[pid] ?? pid}
+                {pid === "all" ? t("weeklyReview.allPortfolios") : portfolioMap[pid] ?? pid}
               </button>
             ))}
           </div>
@@ -294,16 +287,16 @@ export default function WeeklyReviewPage() {
         <button onClick={() => setWeekOffset((n) => n - 1)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#f8fafc] transition-colors cursor-pointer"><ChevronLeft className="w-4 h-4" /></button>
         <div className="text-center">
           <p className="text-[13px] font-semibold text-[#f8fafc]">{weekRange}</p>
-          {isCurrentWeek && <p className="text-[10px] text-[#475569] mt-0.5">Current Week</p>}
+          {isCurrentWeek && <p className="text-[10px] text-[#475569] mt-0.5">{t("weeklyReview.currentWeek")}</p>}
         </div>
         <button onClick={() => setWeekOffset((n) => n + 1)} disabled={isCurrentWeek} className={cn("w-8 h-8 flex items-center justify-center rounded-lg border transition-colors cursor-pointer", isCurrentWeek ? "border-[#0f172a] text-[#1e293b] cursor-not-allowed" : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#f8fafc]")}><ChevronRight className="w-4 h-4" /></button>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-[#0e1223] rounded-xl border border-[#1e293b] p-1">
-        {(["write", "history"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={cn("flex-1 h-8 rounded-lg text-[12px] font-semibold transition-all duration-150 cursor-pointer", tab === t ? "bg-[#0f172a] text-[#f8fafc] shadow-sm" : "text-[#475569] hover:text-[#94a3b8]")}>
-            {t === "write" ? "Write Review" : `History (${historyReviews.length})`}
+        {(["write", "history"] as const).map((tabKey) => (
+          <button key={tabKey} onClick={() => setTab(tabKey)} className={cn("flex-1 h-8 rounded-lg text-[12px] font-semibold transition-all duration-150 cursor-pointer", tab === tabKey ? "bg-[#0f172a] text-[#f8fafc] shadow-sm" : "text-[#475569] hover:text-[#94a3b8]")}>
+            {tabKey === "write" ? t("weeklyReview.writeTab") : tf("weeklyReview.historyTab", { n: historyReviews.length })}
           </button>
         ))}
       </div>
@@ -311,58 +304,58 @@ export default function WeeklyReviewPage() {
       {/* Write tab */}
       {tab === "write" && (
         <div className="space-y-4">
-          {existingReview && <div className="rounded-xl border border-[#3b82f6]/30 bg-[#3b82f6]/5 px-4 py-3"><p className="text-[12px] text-[#3b82f6] font-semibold">Editing existing review for this week</p></div>}
+          {existingReview && <div className="rounded-xl border border-[#3b82f6]/30 bg-[#3b82f6]/5 px-4 py-3"><p className="text-[12px] text-[#3b82f6] font-semibold">{t("weeklyReview.editingExisting")}</p></div>}
 
           {weekAnalytics.totalTrades > 0
-            ? <WeekSummary weekAnalytics={weekAnalytics} currency={currency} />
-            : <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-5 py-4 text-center"><p className="text-[13px] text-[#475569]">No trades this week — you can still write a reflection.</p></div>
+            ? <WeekSummary weekAnalytics={weekAnalytics} currency={currency} t={t} />
+            : <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-5 py-4 text-center"><p className="text-[13px] text-[#475569]">{t("weeklyReview.noTradesThisWeek")}</p></div>
           }
 
-          <SectionCard title="Did you follow your trading plan?" description="Be honest with yourself">
+          <SectionCard title={t("weeklyReview.planQuestion")} description={t("weeklyReview.planHint")}>
             <div className="grid grid-cols-2 gap-2 mb-3">
-              {[{ value: true, label: "Yes, I was disciplined" }, { value: false, label: "No, I deviated" }].map(({ value, label }) => (
-                <button key={String(value)} onClick={() => setField("followedPlan", value)} className={cn("h-10 rounded-lg text-[13px] font-semibold border transition-all duration-150 cursor-pointer", form.followedPlan === value ? value ? "bg-[#22c55e]/10 border-[#22c55e]/40 text-[#22c55e]" : "bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]" : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]")}>{label}</button>
+              {[{ value: true, labelKey: "weeklyReview.planYes" }, { value: false, labelKey: "weeklyReview.planNo" }].map(({ value, labelKey }) => (
+                <button key={String(value)} onClick={() => setField("followedPlan", value)} className={cn("h-10 rounded-lg text-[13px] font-semibold border transition-all duration-150 cursor-pointer", form.followedPlan === value ? value ? "bg-[#22c55e]/10 border-[#22c55e]/40 text-[#22c55e]" : "bg-[#ef4444]/10 border-[#ef4444]/40 text-[#ef4444]" : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]")}>{t(labelKey)}</button>
               ))}
             </div>
             {form.followedPlan !== null && (
-              <textarea rows={2} value={form.followedPlanNotes} onChange={(e) => setField("followedPlanNotes", e.target.value)} placeholder={form.followedPlan ? "What helped you stay disciplined?" : "What caused you to deviate?"} className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[13px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors" />
+              <textarea rows={2} value={form.followedPlanNotes} onChange={(e) => setField("followedPlanNotes", e.target.value)} placeholder={form.followedPlan ? t("weeklyReview.planYesPlaceholder") : t("weeklyReview.planNoPlaceholder")} className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[13px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors" />
             )}
           </SectionCard>
 
-          <SectionCard title="What mistake repeated this week?">
+          <SectionCard title={t("weeklyReview.mistakeQuestion")}>
             <div className="flex flex-wrap gap-2 mb-3">
-              {MISTAKE_OPTIONS.map(({ key, label }) => (
+              {MISTAKE_KEYS.map((key) => (
                 <button key={key} onClick={() => setField("repeatedMistake", key === form.repeatedMistake ? "" : key)} className={cn("px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all duration-150 cursor-pointer flex items-center gap-1.5", form.repeatedMistake === key ? key === "none" ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]" : "bg-[#f59e0b]/10 border-[#f59e0b]/30 text-[#f59e0b]" : "border-[#1e293b] text-[#475569] hover:border-[#334155] hover:text-[#94a3b8]")}>
-                  {label}
-                  {weekAnalytics.mostCommonMistake === key && <span className="text-[9px] font-bold text-[#f59e0b] bg-[#f59e0b]/20 px-1 rounded">AUTO</span>}
+                  {t(`mistakes.${key}`)}
+                  {weekAnalytics.mostCommonMistake === key && <span className="text-[9px] font-bold text-[#f59e0b] bg-[#f59e0b]/20 px-1 rounded">{t("weeklyReview.auto")}</span>}
                 </button>
               ))}
             </div>
             {form.repeatedMistake && form.repeatedMistake !== "none" && (
-              <Textarea placeholder="Describe what happened and how to avoid it next time..." value={form.repeatedMistakeNotes} onChange={(v) => setField("repeatedMistakeNotes", v)} />
+              <Textarea placeholder={t("weeklyReview.mistakeNotesPlaceholder")} value={form.repeatedMistakeNotes} onChange={(v) => setField("repeatedMistakeNotes", v)} />
             )}
           </SectionCard>
 
-          <SectionCard title="What's your goal for next week?" description="One focused improvement">
-            <Textarea rows={3} placeholder="E.g. Only trade during the first 2 hours of the session..." value={form.improvementNextWeek} onChange={(v) => setField("improvementNextWeek", v)} />
+          <SectionCard title={t("weeklyReview.goalQuestion")} description={t("weeklyReview.goalHint")}>
+            <Textarea rows={3} placeholder={t("weeklyReview.goalPlaceholder")} value={form.improvementNextWeek} onChange={(v) => setField("improvementNextWeek", v)} />
           </SectionCard>
 
-          <SectionCard title="Additional notes" description="Anything else you want to remember">
-            <Textarea rows={3} placeholder="Market context, mindset observations, external factors..." value={form.notes} onChange={(v) => setField("notes", v)} />
+          <SectionCard title={t("weeklyReview.notesQuestion")} description={t("weeklyReview.notesHint")}>
+            <Textarea rows={3} placeholder={t("weeklyReview.notesPlaceholder")} value={form.notes} onChange={(v) => setField("notes", v)} />
           </SectionCard>
 
-          <SectionCard title="How was this week overall?">
+          <SectionCard title={t("weeklyReview.ratingQuestion")}>
             <div className="flex gap-2 mb-2">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button key={r} onClick={() => setField("rating", r)} className={cn("flex-1 h-11 rounded-xl text-[15px] font-bold border transition-all duration-150 cursor-pointer", form.rating === r ? "bg-[#f8fafc]/10 border-[#f8fafc]/20 text-[#f8fafc] scale-105" : "border-[#1e293b] text-[#334155] hover:border-[#334155] hover:text-[#94a3b8]")}>{r}</button>
               ))}
             </div>
-            {form.rating > 0 && <p className={cn("text-center text-[12px] font-semibold mt-1", RATING_LABELS[form.rating].color)}>{RATING_LABELS[form.rating].label}</p>}
+            {form.rating > 0 && <p className={cn("text-center text-[12px] font-semibold mt-1", RATING_COLORS[form.rating])}>{t(`weeklyReview.rating${form.rating}`)}</p>}
           </SectionCard>
 
           <button onClick={handleSave} disabled={saving} className="w-full h-11 rounded-xl bg-[#f8fafc] text-[#020617] text-[14px] font-bold flex items-center justify-center gap-2 hover:bg-[#e2e8f0] active:scale-[0.99] transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
             <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
-            {saving ? "Saving…" : existingReview ? "Update Review" : "Save Weekly Review"}
+            {saving ? "Saving…" : existingReview ? t("weeklyReview.updateReview") : t("weeklyReview.saveReview")}
           </button>
         </div>
       )}
@@ -372,12 +365,12 @@ export default function WeeklyReviewPage() {
         <div className="space-y-3">
           {historyReviews.length === 0 ? (
             <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-5 py-10 text-center">
-              <p className="text-[14px] font-semibold text-[#f8fafc] mb-1">No reviews yet</p>
-              <p className="text-[12px] text-[#475569]">Save your first weekly review to see history here.</p>
+              <p className="text-[14px] font-semibold text-[#f8fafc] mb-1">{t("weeklyReview.noReviewsTitle")}</p>
+              <p className="text-[12px] text-[#475569]">{t("weeklyReview.noReviewsDesc")}</p>
             </div>
           ) : (
             historyReviews.map((r) => (
-              <HistoryCard key={r.id} review={r} portfolioName={r.portfolioId ? (portfolioMap[r.portfolioId] ?? "Unknown") : "All Portfolios"} onDelete={() => handleDeleteReview(r.id)} />
+              <HistoryCard key={r.id} review={r} portfolioName={r.portfolioId ? (portfolioMap[r.portfolioId] ?? "Unknown") : t("weeklyReview.allPortfolios")} onDelete={() => handleDeleteReview(r.id)} t={t} />
             ))
           )}
         </div>

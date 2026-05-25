@@ -18,6 +18,7 @@ import {
 import { Skeleton, StatCardSkeleton, TradeRowSkeleton } from "@/components/shared/Skeleton";
 import { PairDisplay } from "@/components/shared/PairDisplay";
 import { fmtMoneySigned } from "@/lib/format";
+import { useT } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
 function formatDateTime(dateStr: string) {
@@ -30,26 +31,20 @@ function formatDateTime(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-const EMOTION_META: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
-  calm:        { label: "Calm",        emoji: "😌", color: "text-[#22c55e]",  bg: "bg-[#22c55e]/10 border-[#22c55e]/20"  },
-  confident:   { label: "Confident",   emoji: "😎", color: "text-[#3b82f6]",  bg: "bg-[#3b82f6]/10 border-[#3b82f6]/20"  },
-  disciplined: { label: "Disciplined", emoji: "🧘", color: "text-[#22c55e]",  bg: "bg-[#22c55e]/10 border-[#22c55e]/20"  },
-  fomo:        { label: "FOMO",        emoji: "😰", color: "text-[#f59e0b]",  bg: "bg-[#f59e0b]/10 border-[#f59e0b]/20"  },
-  greedy:      { label: "Greedy",      emoji: "🤑", color: "text-[#f59e0b]",  bg: "bg-[#f59e0b]/10 border-[#f59e0b]/20"  },
-  fearful:     { label: "Fearful",     emoji: "😨", color: "text-[#ef4444]",  bg: "bg-[#ef4444]/10 border-[#ef4444]/20"  },
-  revenge:     { label: "Revenge",     emoji: "😤", color: "text-[#ef4444]",  bg: "bg-[#ef4444]/10 border-[#ef4444]/20"  },
+const EMOTION_META: Record<string, { emoji: string; color: string; bg: string }> = {
+  calm:        { emoji: "😌", color: "text-[#22c55e]",  bg: "bg-[#22c55e]/10 border-[#22c55e]/20"  },
+  confident:   { emoji: "😎", color: "text-[#3b82f6]",  bg: "bg-[#3b82f6]/10 border-[#3b82f6]/20"  },
+  disciplined: { emoji: "🧘", color: "text-[#22c55e]",  bg: "bg-[#22c55e]/10 border-[#22c55e]/20"  },
+  fomo:        { emoji: "😰", color: "text-[#f59e0b]",  bg: "bg-[#f59e0b]/10 border-[#f59e0b]/20"  },
+  greedy:      { emoji: "🤑", color: "text-[#f59e0b]",  bg: "bg-[#f59e0b]/10 border-[#f59e0b]/20"  },
+  fearful:     { emoji: "😨", color: "text-[#ef4444]",  bg: "bg-[#ef4444]/10 border-[#ef4444]/20"  },
+  revenge:     { emoji: "😤", color: "text-[#ef4444]",  bg: "bg-[#ef4444]/10 border-[#ef4444]/20"  },
 };
 
 type SortKey = "date_desc" | "date_asc" | "pnl_desc" | "pnl_asc";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "date_desc", label: "Newest first" },
-  { value: "date_asc",  label: "Oldest first" },
-  { value: "pnl_desc",  label: "PnL high → low" },
-  { value: "pnl_asc",   label: "PnL low → high" },
-];
-
 export default function HistoryPage() {
+  const { t, tf } = useT();
   const [trades,     setTrades]     = useState<Trade[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -61,6 +56,13 @@ export default function HistoryPage() {
   const [sortKey,            setSortKey]            = useState<SortKey>("date_desc");
   const [sortOpen,           setSortOpen]           = useState(false);
 
+  const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: "date_desc", label: t("history.sortNewest") },
+    { value: "date_asc",  label: t("history.sortOldest") },
+    { value: "pnl_desc",  label: t("history.sortPnlDesc") },
+    { value: "pnl_asc",   label: t("history.sortPnlAsc") },
+  ];
+
   useEffect(() => {
     async function load() {
       try {
@@ -68,13 +70,13 @@ export default function HistoryPage() {
         setTrades(ts);
         setPortfolios(ps);
       } catch {
-        toast.error("Failed to load trades");
+        toast.error(t("toast.historyLoadFailed"));
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, []);
+  }, [t]);
 
   const portfolioMap = useMemo(
     () => Object.fromEntries(portfolios.map((p) => [p.id, p])),
@@ -82,16 +84,16 @@ export default function HistoryPage() {
   );
 
   const filtered = useMemo(() => {
-    let list = trades.filter((t) => {
-      if (filterPortfolio !== "all" && t.portfolioId !== filterPortfolio) return false;
-      if (filterOutcome   !== "all" && t.outcome     !== filterOutcome)   return false;
-      if (filterDirection !== "all" && t.direction   !== filterDirection) return false;
-      if (filterEmotion   !== "all" && t.emotionBefore !== filterEmotion) return false;
+    let list = trades.filter((trade) => {
+      if (filterPortfolio !== "all" && trade.portfolioId !== filterPortfolio) return false;
+      if (filterOutcome   !== "all" && trade.outcome     !== filterOutcome)   return false;
+      if (filterDirection !== "all" && trade.direction   !== filterDirection) return false;
+      if (filterEmotion   !== "all" && trade.emotionBefore !== filterEmotion) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (
-          !t.pair.toLowerCase().includes(q) &&
-          !(t.setupTag ?? "").toLowerCase().includes(q)
+          !trade.pair.toLowerCase().includes(q) &&
+          !(trade.setupTag ?? "").toLowerCase().includes(q)
         ) return false;
       }
       return true;
@@ -109,8 +111,8 @@ export default function HistoryPage() {
     return list;
   }, [trades, filterPortfolio, filterOutcome, filterDirection, filterEmotion, search, sortKey]);
 
-  const totalPnl = filtered.reduce((s, t) => s + t.pnl, 0);
-  const wins     = filtered.filter((t) => t.outcome === "win").length;
+  const totalPnl = filtered.reduce((s, trade) => s + trade.pnl, 0);
+  const wins     = filtered.filter((trade) => trade.outcome === "win").length;
   const winRate  = filtered.length > 0 ? Math.round((wins / filtered.length) * 100) : 0;
 
   function resetFilters() {
@@ -147,25 +149,27 @@ export default function HistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em] leading-none text-[#f8fafc]">
-            Trade History
+            {t("nav.history")}
           </h1>
-          <p className="text-[12px] text-[#475569] mt-1.5">{filtered.length} of {trades.length} trades</p>
+          <p className="text-[12px] text-[#475569] mt-1.5">
+            {tf("history.tradeCount", { n: filtered.length, m: trades.length })}
+          </p>
         </div>
         <Link
           href="/add-trade"
           className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Log Trade
+          {t("history.logTrade")}
         </Link>
       </div>
 
       {filtered.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total PnL",  value: fmtMoneySigned("$", totalPnl), accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]" },
-            { label: "Win Rate",   value: `${winRate}%`,              accent: "text-[#f8fafc]" },
-            { label: "Trades",     value: String(filtered.length),    accent: "text-[#f8fafc]" },
+            { label: t("history.totalPnl"), value: fmtMoneySigned("$", totalPnl), accent: totalPnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]" },
+            { label: t("history.winRate"),  value: `${winRate}%`,              accent: "text-[#f8fafc]" },
+            { label: t("history.trades"),   value: String(filtered.length),    accent: "text-[#f8fafc]" },
           ].map(({ label, value, accent }) => (
             <div key={label} className="rounded-xl border border-[#1e293b] bg-[#0e1223] px-4 py-3">
               <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.06em] mb-1">{label}</p>
@@ -182,7 +186,7 @@ export default function HistoryPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pair or setup…"
+              placeholder={t("history.searchPlaceholder")}
               className="w-full h-9 pl-8 pr-3 rounded-lg border border-[#1e293b] bg-[#0e1223] text-[13px] text-[#f8fafc] placeholder:text-[#334155] focus:outline-none focus:border-[#334155] transition-colors"
             />
           </div>
@@ -193,7 +197,7 @@ export default function HistoryPage() {
               onChange={(e) => setFilterPortfolio(e.target.value)}
               className="h-9 px-3 rounded-lg border border-[#1e293b] bg-[#0e1223] text-[13px] text-[#94a3b8] focus:outline-none focus:border-[#334155] transition-colors cursor-pointer"
             >
-              <option value="all">All Portfolios</option>
+              <option value="all">{t("history.allPortfolios")}</option>
               {portfolios.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -205,9 +209,9 @@ export default function HistoryPage() {
             onChange={(e) => setFilterEmotion(e.target.value)}
             className="h-9 px-3 rounded-lg border border-[#1e293b] bg-[#0e1223] text-[13px] text-[#94a3b8] focus:outline-none focus:border-[#334155] transition-colors cursor-pointer"
           >
-            <option value="all">All Emotions</option>
+            <option value="all">{t("history.allEmotions")}</option>
             {Object.entries(EMOTION_META).map(([k, v]) => (
-              <option key={k} value={k}>{v.emoji} {v.label}</option>
+              <option key={k} value={k}>{v.emoji} {t(`emotions.${k}`)}</option>
             ))}
           </select>
 
@@ -243,7 +247,7 @@ export default function HistoryPage() {
               onClick={resetFilters}
               className="h-9 px-3 rounded-lg text-[12px] font-semibold text-[#475569] hover:text-[#f8fafc] transition-colors cursor-pointer"
             >
-              Clear
+              {t("common.clear")}
             </button>
           )}
         </div>
@@ -255,7 +259,7 @@ export default function HistoryPage() {
                 key={o}
                 onClick={() => setFilterOutcome(o)}
                 className={cn(
-                  "h-7 px-2.5 rounded-md text-[11px] font-semibold border capitalize transition-colors cursor-pointer",
+                  "h-7 px-2.5 rounded-md text-[11px] font-semibold border transition-colors cursor-pointer",
                   filterOutcome === o
                     ? o === "win" ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
                       : o === "loss" ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
@@ -263,7 +267,7 @@ export default function HistoryPage() {
                     : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
                 )}
               >
-                {o === "all" ? "All outcomes" : o}
+                {o === "all" ? t("history.allOutcomes") : t(`common.${o}`)}
               </button>
             ))}
           </div>
@@ -276,7 +280,7 @@ export default function HistoryPage() {
                 key={d}
                 onClick={() => setFilterDirection(d)}
                 className={cn(
-                  "h-7 px-2.5 rounded-md text-[11px] font-semibold border capitalize transition-colors cursor-pointer flex items-center gap-1",
+                  "h-7 px-2.5 rounded-md text-[11px] font-semibold border transition-colors cursor-pointer flex items-center gap-1",
                   filterDirection === d
                     ? d === "long" ? "bg-[#22c55e]/10 border-[#22c55e]/30 text-[#22c55e]"
                       : d === "short" ? "bg-[#ef4444]/10 border-[#ef4444]/30 text-[#ef4444]"
@@ -286,7 +290,7 @@ export default function HistoryPage() {
               >
                 {d === "long" && <ArrowUp className="w-3 h-3" />}
                 {d === "short" && <ArrowDown className="w-3 h-3" />}
-                {d === "all" ? "All directions" : d}
+                {d === "all" ? t("history.allDirections") : t(`common.${d}`)}
               </button>
             ))}
           </div>
@@ -299,10 +303,10 @@ export default function HistoryPage() {
         <div className="flex flex-col items-center justify-center py-24 rounded-xl border border-[#1e293b] bg-[#0e1223] text-center">
           <BookOpen className="w-9 h-9 text-[#1e293b] mb-4" />
           <p className="text-[14px] font-semibold text-[#475569] mb-1">
-            {trades.length === 0 ? "No trades yet" : "No trades match"}
+            {trades.length === 0 ? t("history.noTradesTitle") : t("history.noMatchTitle")}
           </p>
           <p className="text-[12px] text-[#334155] mb-6 max-w-xs leading-relaxed">
-            {trades.length === 0 ? "Start logging trades to build your journal." : "Try adjusting your filters."}
+            {trades.length === 0 ? t("history.noTradesDesc") : t("history.noMatchDesc")}
           </p>
           {trades.length === 0 && (
             <Link
@@ -310,7 +314,7 @@ export default function HistoryPage() {
               className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-semibold hover:bg-[#e2e8f0] transition-colors"
             >
               <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Log First Trade
+              {t("history.logFirstTrade")}
             </Link>
           )}
         </div>
@@ -318,11 +322,11 @@ export default function HistoryPage() {
         <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] overflow-hidden">
           <div className="hidden md:grid grid-cols-[4px_1fr_100px_80px_80px_100px] gap-4 px-5 py-3 border-b border-[#1e293b]">
             <span />
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Trade</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Setup</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Emotion</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">Date</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">PnL</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">{t("history.colTrade")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">{t("history.colSetup")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">{t("history.colEmotion")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">{t("history.colDate")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">{t("history.colPnl")}</span>
           </div>
 
           {filtered.map((trade, idx) => {
@@ -330,6 +334,7 @@ export default function HistoryPage() {
             const isLoss = trade.outcome === "loss";
             const portfolio = portfolioMap[trade.portfolioId];
             const emo = trade.emotionBefore ? EMOTION_META[trade.emotionBefore] : null;
+            const emoLabel = trade.emotionBefore ? t(`emotions.${trade.emotionBefore}`) : null;
 
             return (
               <Link
@@ -344,8 +349,8 @@ export default function HistoryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <PairDisplay pair={trade.pair} className="text-[13px] font-bold text-[#f8fafc]" />
-                    <span className={cn("text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded", trade.direction === "long" ? "bg-[#22c55e]/10 text-[#22c55e]/80" : "bg-[#ef4444]/10 text-[#ef4444]/80")}>{trade.direction}</span>
-                    <span className={cn("text-[10px] font-semibold capitalize px-1.5 py-0.5 rounded", isWin ? "bg-[#22c55e]/10 text-[#22c55e]" : isLoss ? "bg-[#ef4444]/10 text-[#ef4444]" : "bg-[#1e293b] text-[#94a3b8]")}>{trade.outcome}</span>
+                    <span className={cn("text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded", trade.direction === "long" ? "bg-[#22c55e]/10 text-[#22c55e]/80" : "bg-[#ef4444]/10 text-[#ef4444]/80")}>{t(`common.${trade.direction}`)}</span>
+                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded", isWin ? "bg-[#22c55e]/10 text-[#22c55e]" : isLoss ? "bg-[#ef4444]/10 text-[#ef4444]" : "bg-[#1e293b] text-[#94a3b8]")}>{t(`common.${trade.outcome}`)}</span>
                   </div>
                   <p className="text-[11px] text-[#475569] mt-0.5 truncate">{portfolio?.name ?? "—"} · {trade.market}</p>
                   <div className="flex items-center gap-3 mt-1 md:hidden">
@@ -357,7 +362,7 @@ export default function HistoryPage() {
                   {trade.setupTag ? <span className="text-[11px] font-semibold text-[#475569] bg-[#0f172a] border border-[#1e293b] px-2 py-0.5 rounded-md truncate block max-w-full">{trade.setupTag}</span> : <span className="text-[11px] text-[#334155]">—</span>}
                 </div>
                 <div className="hidden md:block">
-                  {emo ? <span className={cn("text-[11px] font-semibold border px-2 py-0.5 rounded-md", emo.color, emo.bg)}>{emo.emoji} {emo.label}</span> : <span className="text-[11px] text-[#334155]">—</span>}
+                  {emo && emoLabel ? <span className={cn("text-[11px] font-semibold border px-2 py-0.5 rounded-md", emo.color, emo.bg)}>{emo.emoji} {emoLabel}</span> : <span className="text-[11px] text-[#334155]">—</span>}
                 </div>
                 <p className="text-[11px] text-[#334155] tabular text-right hidden md:block whitespace-nowrap">{formatDateTime(trade.dateTime)}</p>
                 <div className="text-right ml-auto md:ml-0 shrink-0">

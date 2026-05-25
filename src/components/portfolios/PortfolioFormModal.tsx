@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Portfolio, TradingStyle } from "@/types";
+import { useT } from "@/i18n/LanguageProvider";
 
 interface FormData {
   name: string;
@@ -32,14 +33,8 @@ const EMPTY: FormData = {
 
 const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "USDT", "USDC", "BTC", "ETH"];
 
-const TRADING_STYLES: { value: TradingStyle; label: string }[] = [
-  { value: "scalping", label: "Scalping" },
-  { value: "day_trading", label: "Day Trading" },
-  { value: "swing", label: "Swing Trading" },
-  { value: "position", label: "Position Trading" },
-  { value: "crypto_spot", label: "Crypto Spot" },
-  { value: "prop_firm", label: "Prop Firm" },
-  { value: "other", label: "Other" },
+const TRADING_STYLE_KEYS: TradingStyle[] = [
+  "scalping", "day_trading", "swing", "position", "crypto_spot", "prop_firm", "other",
 ];
 
 interface Props {
@@ -103,6 +98,7 @@ function Input({
 }
 
 export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) {
+  const { t } = useT();
   const [form, setForm] = useState<FormData>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
@@ -134,12 +130,12 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
 
   function validate(): boolean {
     const e: Partial<Record<keyof FormData, string>> = {};
-    if (!form.name.trim()) e.name = "Portfolio name is required";
-    if (!form.broker.trim()) e.broker = "Broker / exchange is required";
+    if (!form.name.trim()) e.name = t("portfolio.errName");
+    if (!form.broker.trim()) e.broker = t("portfolio.errBroker");
     const bal = parseFloat(form.startingBalance);
     if (!form.startingBalance || isNaN(bal) || bal <= 0)
-      e.startingBalance = "Enter a valid starting balance";
-    if (!form.tradingStyle) e.tradingStyle = "Select a trading style";
+      e.startingBalance = t("portfolio.errBalance");
+    if (!form.tradingStyle) e.tradingStyle = t("portfolio.errStyle");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -165,10 +161,10 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
       <DialogContent className="bg-[#0e1223] border-[#1e293b] text-[#f8fafc] max-w-lg w-full p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-5 border-b border-[#1e293b]">
           <DialogTitle className="text-[15px] font-bold tracking-tight">
-            {isEditing ? "Edit Portfolio" : "Create Portfolio"}
+            {isEditing ? t("portfolio.editTitle") : t("portfolio.createTitle")}
           </DialogTitle>
           <p className="text-[12px] text-[#475569] mt-0.5">
-            {isEditing ? "Update your portfolio details" : "Set up a new trading account to journal"}
+            {isEditing ? t("portfolio.editSubtitle") : t("portfolio.createSubtitle")}
           </p>
         </DialogHeader>
 
@@ -176,19 +172,19 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
           <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
             {/* Name + Broker */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Portfolio Name" required error={errors.name}>
+              <Field label={t("portfolio.nameLabel")} required error={errors.name}>
                 <Input
                   value={form.name}
                   onChange={set("name")}
-                  placeholder="Binance Main"
+                  placeholder={t("portfolio.namePlaceholder")}
                   hasError={!!errors.name}
                 />
               </Field>
-              <Field label="Exchange / Broker" required error={errors.broker}>
+              <Field label={t("portfolio.brokerLabel")} required error={errors.broker}>
                 <Input
                   value={form.broker}
                   onChange={set("broker")}
-                  placeholder="Binance"
+                  placeholder={t("portfolio.brokerPlaceholder")}
                   hasError={!!errors.broker}
                 />
               </Field>
@@ -196,7 +192,7 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
 
             {/* Balance + Currency */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Starting Balance" required error={errors.startingBalance}>
+              <Field label={t("portfolio.balanceLabel")} required error={errors.startingBalance}>
                 <Input
                   type="number"
                   value={form.startingBalance}
@@ -205,7 +201,7 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
                   hasError={!!errors.startingBalance}
                 />
               </Field>
-              <Field label="Currency">
+              <Field label={t("portfolio.currencyLabel")}>
                 <div className="flex flex-wrap gap-1.5">
                   {CURRENCIES.map((c) => (
                     <button
@@ -227,9 +223,9 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
             </div>
 
             {/* Trading Style */}
-            <Field label="Trading Style" required error={errors.tradingStyle}>
+            <Field label={t("portfolio.styleLabel")} required error={errors.tradingStyle}>
               <div className="flex flex-wrap gap-2">
-                {TRADING_STYLES.map(({ value, label }) => (
+                {TRADING_STYLE_KEYS.map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -242,30 +238,30 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
                       errors.tradingStyle ? "border-[#ef4444]/40" : ""
                     )}
                   >
-                    {label}
+                    {t(`tradingStyles.${value}`)}
                   </button>
                 ))}
               </div>
             </Field>
 
             {/* Goal */}
-            <Field label="Goal">
+            <Field label={t("portfolio.goalLabel")}>
               <textarea
                 value={form.goal}
                 onChange={(e) => set("goal")(e.target.value)}
                 rows={2}
-                placeholder="e.g. Grow to $15,000 with consistent 2% daily gains"
+                placeholder={t("portfolio.goalPlaceholder")}
                 className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[13px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors"
               />
             </Field>
 
             {/* Notes */}
-            <Field label="Notes">
+            <Field label={t("portfolio.notesLabel")}>
               <textarea
                 value={form.notes}
                 onChange={(e) => set("notes")(e.target.value)}
                 rows={2}
-                placeholder="e.g. No trading during high-impact news events"
+                placeholder={t("portfolio.notesPlaceholder")}
                 className="w-full rounded-lg border border-[#1e293b] bg-[#0f172a] px-3 py-2.5 text-[13px] text-[#f8fafc] placeholder:text-[#334155] resize-none focus:outline-none focus:border-[#334155] focus:ring-1 focus:ring-[#334155] transition-colors"
               />
             </Field>
@@ -278,13 +274,13 @@ export function PortfolioFormModal({ open, onClose, onSubmit, initial }: Props) 
               onClick={onClose}
               className="h-9 px-4 rounded-lg border border-[#1e293b] text-[13px] font-semibold text-[#475569] hover:border-[#334155] hover:text-[#f8fafc] transition-colors cursor-pointer"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               className="h-9 px-5 rounded-lg bg-[#f8fafc] text-[#020617] text-[13px] font-bold hover:bg-[#e2e8f0] active:scale-[0.99] transition-all cursor-pointer"
             >
-              {isEditing ? "Save Changes" : "Create Portfolio"}
+              {isEditing ? t("portfolio.saveChanges") : t("portfolios.createPortfolio")}
             </button>
           </div>
         </form>

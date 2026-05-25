@@ -1,45 +1,50 @@
+"use client";
+
 import Link from "next/link";
 import { PlusCircle, CalendarCheck, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const actions = [
-  {
-    href: "/add-trade",
-    label: "Log a Trade",
-    description: "Record a new entry",
-    icon: PlusCircle,
-    iconColor: "text-[#22c55e]",
-    iconBg: "bg-[#22c55e]/10",
-    hoverBg: "hover:border-[#22c55e]/20",
-  },
-  {
-    href: "/weekly-review",
-    label: "Weekly Review",
-    description: "Reflect on this week",
-    icon: CalendarCheck,
-    iconColor: "text-[#3b82f6]",
-    iconBg: "bg-[#3b82f6]/10",
-    hoverBg: "hover:border-[#3b82f6]/20",
-  },
-  {
-    href: "/history",
-    label: "Trade History",
-    description: "Browse past trades",
-    icon: ClipboardList,
-    iconColor: "text-[#8b5cf6]",
-    iconBg: "bg-[#8b5cf6]/10",
-    hoverBg: "hover:border-[#8b5cf6]/20",
-  },
-];
+import { useT } from "@/i18n/LanguageProvider";
 
 export function QuickActions() {
+  const { t } = useT();
+
+  const actions = [
+    {
+      href: "/add-trade",
+      labelKey: "quickActions.logTrade",
+      descKey: "quickActions.logTradeDesc",
+      icon: PlusCircle,
+      iconColor: "text-[#22c55e]",
+      iconBg: "bg-[#22c55e]/10",
+      hoverBg: "hover:border-[#22c55e]/20",
+    },
+    {
+      href: "/weekly-review",
+      labelKey: "nav.weeklyReview",
+      descKey: "quickActions.weeklyReviewDesc",
+      icon: CalendarCheck,
+      iconColor: "text-[#3b82f6]",
+      iconBg: "bg-[#3b82f6]/10",
+      hoverBg: "hover:border-[#3b82f6]/20",
+    },
+    {
+      href: "/history",
+      labelKey: "nav.history",
+      descKey: "quickActions.tradeHistoryDesc",
+      icon: ClipboardList,
+      iconColor: "text-[#8b5cf6]",
+      iconBg: "bg-[#8b5cf6]/10",
+      hoverBg: "hover:border-[#8b5cf6]/20",
+    },
+  ];
+
   return (
     <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] h-full flex flex-col">
       <div className="px-5 py-4 border-b border-[#1e293b]">
-        <p className="text-[13px] font-semibold text-[#f8fafc]">Quick Actions</p>
+        <p className="text-[13px] font-semibold text-[#f8fafc]">{t("quickActions.title")}</p>
       </div>
       <div className="flex-1 p-2 flex flex-col gap-1">
-        {actions.map(({ href, label, description, icon: Icon, iconColor, iconBg, hoverBg }) => (
+        {actions.map(({ href, labelKey, descKey, icon: Icon, iconColor, iconBg, hoverBg }) => (
           <Link
             key={href}
             href={href}
@@ -58,8 +63,8 @@ export function QuickActions() {
               <Icon className={cn("w-4 h-4", iconColor)} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-[#cbd5e1] leading-none">{label}</p>
-              <p className="text-[11px] text-[#475569] mt-1 leading-none">{description}</p>
+              <p className="text-[13px] font-semibold text-[#cbd5e1] leading-none">{t(labelKey)}</p>
+              <p className="text-[11px] text-[#475569] mt-1 leading-none">{t(descKey)}</p>
             </div>
           </Link>
         ))}

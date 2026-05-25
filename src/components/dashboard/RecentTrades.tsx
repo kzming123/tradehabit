@@ -1,9 +1,12 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 import { Trade, Portfolio } from "@/types";
 import { PairDisplay } from "@/components/shared/PairDisplay";
 import { fmtMoneySigned } from "@/lib/format";
+import { useT } from "@/i18n/LanguageProvider";
 
 interface Props {
   trades: Trade[];
@@ -18,40 +21,40 @@ function formatDate(dateStr: string) {
 }
 
 export function RecentTrades({ trades, portfolioMap, currency }: Props) {
+  const { t } = useT();
+
   return (
     <div className="rounded-xl border border-[#1e293b] bg-[#0e1223] overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e293b]">
-        <p className="text-[13px] font-semibold text-[#f8fafc]">Recent Trades</p>
+        <p className="text-[13px] font-semibold text-[#f8fafc]">{t("recentTrades.title")}</p>
         <Link
           href="/history"
           className="flex items-center gap-1 text-[12px] text-[#475569] hover:text-[#94a3b8] transition-colors cursor-pointer"
         >
-          View all <ArrowRight className="w-3 h-3" />
+          {t("recentTrades.viewAll")} <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
 
       {trades.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-[13px] font-semibold text-[#475569] mb-1">No trades yet</p>
-          <p className="text-[12px] text-[#334155] mb-4">Log your first trade to see it here.</p>
+          <p className="text-[13px] font-semibold text-[#475569] mb-1">{t("recentTrades.noTradesTitle")}</p>
+          <p className="text-[12px] text-[#334155] mb-4">{t("recentTrades.noTradesDesc")}</p>
           <Link
             href="/add-trade"
             className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[#f8fafc] text-[#020617] text-[12px] font-bold hover:bg-[#e2e8f0] transition-colors"
           >
             <Plus className="w-3 h-3" strokeWidth={2.5} />
-            Log Trade
+            {t("recentTrades.logTrade")}
           </Link>
         </div>
       ) : (
         <>
-          {/* Column headers */}
           <div className="hidden sm:grid grid-cols-[4px_1fr_80px_72px_90px] gap-3 px-5 py-2.5 border-b border-[#0f172a]">
             <span />
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Trade</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">Setup</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">Date</span>
-            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">PnL</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">{t("recentTrades.colTrade")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em]">{t("recentTrades.colSetup")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">{t("recentTrades.colDate")}</span>
+            <span className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] text-right">{t("recentTrades.colPnl")}</span>
           </div>
 
           {trades.map((trade, idx) => {
